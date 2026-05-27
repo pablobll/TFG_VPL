@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  db:
+    image: mariadb:10.11
+    environment:
+      - MYSQL_ROOT_PASSWORD=moodle_root_secret
+      - MYSQL_DATABASE=moodle
+      - MYSQL_USER=moodleuser
+      - MYSQL_PASSWORD=moodlepassword
+    volumes:
+      - mariadb_data:/var/lib/mysql
+
+  moodle:
+    build: .
+    ports:
+      - "8080:80"
+    environment:
+      - MOODLE_DB_HOST=db
+      - MOODLE_DB_NAME=moodle
+      - MOODLE_DB_USER=moodleuser
+      - MOODLE_DB_PASSWORD=moodlepassword
+    volumes:
+      - moodledata:/var/www/moodledata
+      - moodle_html:/var/www/html
+      - ./report_vpl_analytics:/var/www/html/report/vpl_analytics
+    depends_on:
+      - db
+
+volumes:
+  mariadb_data:
+    driver: local
+  moodledata:
+    driver: local
+  moodle_html:
+    driver: local
