@@ -14,6 +14,22 @@ $PAGE->set_heading(get_string('pluginname', 'report_vpl_analytics'));
 echo $OUTPUT->header();
 echo $OUTPUT->heading(get_string('pluginname', 'report_vpl_analytics'));
 
-echo html_writer::tag('p', 'Welcome to the VPL Analytics plugin base structure!');
+$metrics = \report_vpl_analytics\data_manager::get_student_metrics();
+
+$table = new html_table();
+$table->head = ['User ID', 'Submissions', 'Runs', 'Debugs', 'Avg Grade'];
+$table->data = [];
+
+foreach ($metrics as $m) {
+    $table->data[] = [
+        $m['userid'],
+        $m['total_submissions'],
+        $m['total_runs'],
+        $m['total_debugs'],
+        $m['average_grade']
+    ];
+}
+
+echo html_writer::table($table);
 
 echo $OUTPUT->footer();
