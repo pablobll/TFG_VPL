@@ -152,4 +152,97 @@ echo '</div>';
 
 echo '</div>'; // Fin Wrapper
 
+echo "
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const rawData = {$dashboard_json};
+    
+    const filterModeEl = document.getElementById('filterMode');
+    const filterSpecificEl = document.getElementById('filterSpecific');
+    const specificFilterGroup = document.getElementById('specificFilterGroup');
+    const specificFilterLabel = document.getElementById('specificFilterLabel');
+    const tableBody = document.getElementById('dataTableBody');
+
+    filterModeEl.addEventListener('change', updateSpecificFilters);
+    filterSpecificEl.addEventListener('change', renderTable);
+
+    function updateSpecificFilters() {
+        const mode = filterModeEl.value;
+        filterSpecificEl.innerHTML = ''; 
+
+        if (mode === 'global') {
+            specificFilterGroup.style.display = 'none';
+        } else {
+            specificFilterGroup.style.display = 'flex';
+            let options = [];
+            
+            if (mode === 'curso') {
+                specificFilterLabel.innerText = 'Seleccionar Curso';
+                options = rawData.courses;
+            } else if (mode === 'grupo') {
+                specificFilterLabel.innerText = 'Seleccionar Grupo';
+                options = rawData.groups;
+            } else if (mode === 'alumno') {
+                specificFilterLabel.innerText = 'Seleccionar Alumno (ID)';
+                options = rawData.users;
+            }
+
+            options.forEach(opt => {
+                let el = document.createElement('option');
+                el.value = opt;
+                if (mode === 'curso') el.innerText = 'Curso ' + opt;
+                else if (mode === 'grupo') el.innerText = opt;
+                else if (mode === 'alumno') el.innerText = 'Alumno ' + opt;
+                else el.innerText = opt;
+                filterSpecificEl.appendChild(el);
+            });
+        }
+        renderTable();
+    }
+
+    function renderTable() {
+        const mode = filterModeEl.value;
+        const specific = filterSpecificEl.value;
+
+        let filteredSubmissions = rawData.submissions;
+        if (mode === 'curso') {
+            filteredSubmissions = filteredSubmissions.filter(s => s.course == specific);
+        } else if (mode === 'grupo') {
+            filteredSubmissions = filteredSubmissions.filter(s => s.groupid == specific);
+        } else if (mode === 'alumno') {
+            filteredSubmissions = filteredSubmissions.filter(s => s.userid == specific);
+        }
+
+        if (filteredSubmissions.length === 0) {
+            tableBody.innerHTML = '<tr><td colspan=\"7\" style=\"text-align:center\">No hay entregas registradas.</td></tr>';
+            return;
+        }
+
+        tableBody.innerHTML = '';
+        let sortedForTable = [...filteredSubmissions].sort((a,b) => b.datesubmitted - a.datesubmitted);
+        
+        sortedForTable.forEach(s => {
+            let tr = document.createElement('tr');
+            let dateObj = new Date(s.datesubmitted * 1000);
+            let dateStr = dateObj.toLocaleDateString();
+            let gradeClass = s.grade >= 5.0 ? 'badge-pass' : 'badge-fail';
+            
+            tr.innerHTML = `
+                <td>Alumno \${s.userid}</td>
+                <td>Curso \${s.course}</td>
+                <td>\${s.groupid == '0' ? '-' : s.groupid}</td>
+                <td>\${s.vpl_name}</td>
+                <td>\${s.run_count}</td>
+                <td class=\"\${gradeClass}\">\${s.grade.toFixed(2)}</td>
+                <td>\${dateStr}</td>
+            `;
+            tableBody.appendChild(tr);
+        });
+    }
+
+    updateSpecificFilters();
+});
+</script>
+";
+
 echo $OUTPUT->footer();
