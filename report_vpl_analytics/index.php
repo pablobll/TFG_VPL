@@ -156,15 +156,35 @@ echo "
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const rawData = {$dashboard_json};
-    
+    let currentChart = null;
+
+    const zoomOptions = {
+        pan: { enabled: true, mode: 'xy' },
+        zoom: { wheel: { enabled: false }, pinch: { enabled: false }, mode: 'xy' }
+    };
+
+    const primaryColor = '#007bff'; // Azul clásico Bootstrap/Moodle
+
+    const chartTypeEl = document.getElementById('chartType');
     const filterModeEl = document.getElementById('filterMode');
     const filterSpecificEl = document.getElementById('filterSpecific');
     const specificFilterGroup = document.getElementById('specificFilterGroup');
     const specificFilterLabel = document.getElementById('specificFilterLabel');
     const tableBody = document.getElementById('dataTableBody');
 
+    document.getElementById('btnZoomIn').addEventListener('click', () => {
+        if (currentChart && typeof currentChart.zoom === 'function') currentChart.zoom(1.2);
+    });
+    document.getElementById('btnZoomOut').addEventListener('click', () => {
+        if (currentChart && typeof currentChart.zoom === 'function') currentChart.zoom(0.8);
+    });
+    document.getElementById('btnZoomReset').addEventListener('click', () => {
+        if (currentChart && typeof currentChart.resetZoom === 'function') currentChart.resetZoom();
+    });
+
+    chartTypeEl.addEventListener('change', renderChart);
     filterModeEl.addEventListener('change', updateSpecificFilters);
-    filterSpecificEl.addEventListener('change', renderTable);
+    filterSpecificEl.addEventListener('change', renderChart);
 
     function updateSpecificFilters() {
         const mode = filterModeEl.value;
@@ -197,12 +217,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 filterSpecificEl.appendChild(el);
             });
         }
-        renderTable();
+        renderChart();
     }
 
-    function renderTable() {
+    function renderChart() {
+        if (currentChart) {
+            currentChart.destroy();
+        }
+
         const mode = filterModeEl.value;
         const specific = filterSpecificEl.value;
+        const type = chartTypeEl.value;
 
         let filteredSubmissions = rawData.submissions;
         if (mode === 'curso') {
@@ -213,7 +238,10 @@ document.addEventListener('DOMContentLoaded', function() {
             filteredSubmissions = filteredSubmissions.filter(s => s.userid == specific);
         }
 
+        const ctx = document.getElementById('mainChart').getContext('2d');
+
         if (filteredSubmissions.length === 0) {
+            currentChart = new Chart(ctx, { type: 'bar', data: { labels: ['Sin datos'], datasets: [{data:[0]}] } });
             tableBody.innerHTML = '<tr><td colspan=\"7\" style=\"text-align:center\">No hay entregas registradas.</td></tr>';
             return;
         }
@@ -238,6 +266,146 @@ document.addEventListener('DOMContentLoaded', function() {
             `;
             tableBody.appendChild(tr);
         });
+
+        if (type === 'rendimiento') {
+            let gradesDist = { 'Suspenso (<5)': 0, 'Aprobado (5-7)': 0, 'Notable (7-9)': 0, 'Sobresaliente (>9)': 0 };
+            
+            let userGrades = {};
+            filteredSubmissions.forEach(s => {
+                if(!userGrades[s.userid]) userGrades[s.userid] = {sum:0, count:0};
+                userGrades[s.userid].sum += s.grade;
+                userGrades[s.userid].count++;
+            });
+
+            Object.values(userGrades).forEach(ug => {
+                let grade = ug.sum / ug.count;
+                if (grade < 5) gradesDist['Suspenso (<5)']++;
+                else if (grade < 7) gradesDist['Aprobado (5-7)']++;
+                else if (grade < 9) gradesDist['Notable (7-9)']++;
+                else gradesDist['Sobresaliente (>9)']++;
+            });
+
+            currentChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(gradesDist),
+                    datasets: [{
+                        data: Object.values(gradesDist),
+                        backgroundColor: ['#dc3545', '#ffc107', '#17a2b8', '#28a745'],
+                        borderWidth: 2
+                    }]
+                },
+                options: { 
+                    responsive: true, 
+                    plugins: { 
+                        title: { display: true, text: 'Distribución de Notas Medias', font: {size: 16, weight: 'normal'} }
+                    } 
+                }
+            });
+
+        } else if (type === 'esfuerzo') {
+            let scatterData = filteredSubmissions.map(s => ({
+                x: s.run_count + s.debug_count, 
+                y: s.grade
+            }));
+
+            currentChart = new Chart(ctx, {
+                type: 'scatter',
+                data: {
+                    datasets: [{
+                        label: 'Intentos vs Nota',
+                        data: scatterData,
+                        backgroundColor: primaryColor,
+                        pointRadius: 5,
+                        pointHoverRadius: 7
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { 
+                        title: { display: true, text: 'Correlación de Esfuerzo (Ejecuciones) y Nota', font: {size: 16, weight: 'normal'} },
+                        zoom: zoomOptions
+                    },
+                    scales: {
+                        x: { title: { display: true, text: 'Nº Ejecuciones + Depuraciones' } },
+                        y: { title: { display: true, text: 'Nota' }, min: 0, max: 10 }
+                    }
+                }
+            });
+
+        } else if (type === 'dificultad') {
+            let vplGrades = {};
+            filteredSubmissions.forEach(s => {
+                if(!vplGrades[s.vpl_name]) vplGrades[s.vpl_name] = {sum:0, count:0};
+                vplGrades[s.vpl_name].sum += s.grade;
+                vplGrades[s.vpl_name].count++;
+            });
+            
+            let labels = Object.keys(vplGrades).sort();
+            let data = labels.map(l => vplGrades[l].sum / vplGrades[l].count);
+
+            currentChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Nota Media',
+                        data: data,
+                        backgroundColor: primaryColor,
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { 
+                        title: { display: true, text: 'Dificultad Promedio por Ejercicio', font: {size: 16, weight: 'normal'} },
+                        zoom: zoomOptions
+                    },
+                    scales: { 
+                        x: { grid: {display: false} },
+                        y: { min: 0, max: 10 } 
+                    }
+                }
+            });
+            
+        } else if (type === 'evolucion') {
+            let sortedSubs = [...filteredSubmissions].sort((a,b) => a.datesubmitted - b.datesubmitted);
+            let timeData = sortedSubs.map(s => ({
+                x: new Date(s.datesubmitted * 1000), 
+                y: s.grade
+            }));
+
+            currentChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    datasets: [{
+                        label: 'Evolución de Notas',
+                        data: timeData,
+                        borderColor: primaryColor,
+                        backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                        borderWidth: 2,
+                        pointBackgroundColor: primaryColor,
+                        tension: 0.2,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { 
+                        title: { display: true, text: 'Evolución Temporal de las Calificaciones', font: {size: 16, weight: 'normal'} },
+                        zoom: zoomOptions
+                    },
+                    scales: {
+                        x: { 
+                            type: 'time', 
+                            time: { unit: 'day' },
+                            title: { display: true, text: 'Fecha de Entrega' }
+                        },
+                        y: { title: { display: true, text: 'Nota' }, min: 0, max: 10 }
+                    }
+                }
+            });
+        }
     }
 
     updateSpecificFilters();
