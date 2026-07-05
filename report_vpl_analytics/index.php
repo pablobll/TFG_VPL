@@ -1,9 +1,11 @@
 <?php
 require(__DIR__ . '/../../config.php');
+require_once($CFG->libdir.'/adminlib.php');
 require_login();
 
 $context = context_system::instance();
 require_capability('report/vpl_analytics:view', $context);
+admin_externalpage_setup('reportvpl_analytics');
 
 $url = new moodle_url('/report/vpl_analytics/index.php');
 $PAGE->set_url($url);
