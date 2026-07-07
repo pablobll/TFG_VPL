@@ -115,7 +115,8 @@ echo '<select id="chartType">';
 echo '<option value="rendimiento">Distribución de Rendimiento (Notas)</option>';
 echo '<option value="esfuerzo">Patrón de Frustración (Intentos vs Nota)</option>';
 echo '<option value="dificultad">Dificultad por Actividad (Nota Media)</option>';
-echo '<option value="evolucion">Evolución Temporal (Entregas diarias)</option>';
+echo '<option value="evolucion">Evolución Temporal (Entregas diarias)</option>
+                <option value="riesgo">Detector de Riesgo</option>';
 echo '</select>';
 echo '</div>';
 
@@ -147,7 +148,8 @@ echo '</div>';
 
 echo '<div class="vpl-table-container">';
 echo '<table class="vpl-table">';
-echo '<thead><tr><th>Alumno</th><th>Curso</th><th>Grupo</th><th>Actividad</th><th>Nº Evaluaciones</th><th>Nota</th><th>Fecha</th></tr></thead>';
+echo '<thead><tr><th>Alumno</th><th>Curso</th><th>Grupo</th><th>Actividad</th><th>Nº Evaluaciones</th><th>Nota</th><th>Fecha</th>
+                    <th>Estado</th></tr></thead>';
 echo '<tbody id="dataTableBody"></tbody>';
 echo '</table>';
 echo '</div>';
@@ -246,6 +248,30 @@ document.addEventListener('DOMContentLoaded', function() {
             currentChart = new Chart(ctx, { type: 'bar', data: { labels: ['Sin datos'], datasets: [{data:[0]}] } });
             tableBody.innerHTML = '<tr><td colspan=\"7\" style=\"text-align:center\">No hay entregas registradas.</td></tr>';
             return;
+
+        let studentRiskMap = {};
+        let studentStats = {};
+        filteredSubmissions.forEach(s => {
+            if(!studentStats[s.userid]) studentStats[s.userid] = {sumGrade:0, count:0, sumEvals:0};
+            studentStats[s.userid].sumGrade += s.grade;
+            studentStats[s.userid].sumEvals += s.nevaluations;
+            studentStats[s.userid].count++;
+        });
+
+        Object.keys(studentStats).forEach(uid => {
+            let st = studentStats[uid];
+            let avgGrade = st.sumGrade / st.count;
+            let avgEvals = st.sumEvals / st.count;
+            
+            if (avgGrade < 5.0 && avgEvals > 5) {
+                studentRiskMap[uid] = { label: "Riesgo Alto", class: "badge-danger" };
+            } else if (avgGrade < 5.0 || (avgGrade < 6.0 && avgEvals > 3)) {
+                studentRiskMap[uid] = { label: "Precaución", class: "badge-warning" };
+            } else {
+                studentRiskMap[uid] = { label: "Seguro", class: "badge-success" };
+            }
+        });
+
         }
 
         tableBody.innerHTML = '';
@@ -370,6 +396,30 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
             
+        } else if (type === 'riesgo') {
+            let riskCounts = { 'Riesgo Alto': 0, 'Precaución': 0, 'Seguro': 0 };
+            Object.values(studentRiskMap).forEach(risk => {
+                if(riskCounts[risk.label] !== undefined) riskCounts[risk.label]++;
+            });
+
+            currentChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(riskCounts),
+                    datasets: [{
+                        data: Object.values(riskCounts),
+                        backgroundColor: ['#dc3545', '#ffc107', '#28a745'],
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: { display: true, text: 'Detector de Riesgo', font: {size: 16, weight: 'normal'} }
+                    }
+                }
+            });
+
         } else if (type === 'evolucion') {
             let sortedSubs = [...filteredSubmissions].sort((a,b) => a.datesubmitted - b.datesubmitted);
             let timeData = sortedSubs.map(s => ({
