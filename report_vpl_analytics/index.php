@@ -147,7 +147,7 @@ echo '</div>';
 
 echo '<div class="vpl-table-container">';
 echo '<table class="vpl-table">';
-echo '<thead><tr><th>Alumno</th><th>Curso</th><th>Grupo</th><th>Actividad</th><th>Nº Ejecuciones</th><th>Nota</th><th>Fecha</th></tr></thead>';
+echo '<thead><tr><th>Alumno</th><th>Curso</th><th>Grupo</th><th>Actividad</th><th>Nº Evaluaciones</th><th>Nota</th><th>Fecha</th></tr></thead>';
 echo '<tbody id="dataTableBody"></tbody>';
 echo '</table>';
 echo '</div>';
@@ -307,7 +307,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         } else if (type === 'esfuerzo') {
             let scatterData = filteredSubmissions.map(s => ({
-                x: s.run_count + s.debug_count, 
+                x: s.nevaluations, 
                 y: s.grade
             }));
 
@@ -315,7 +315,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 type: 'scatter',
                 data: {
                     datasets: [{
-                        label: 'Intentos vs Nota',
+                        label: 'Evaluaciones vs Nota',
                         data: scatterData,
                         backgroundColor: primaryColor,
                         pointRadius: 5,
@@ -325,11 +325,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 options: {
                     responsive: true,
                     plugins: { 
-                        title: { display: true, text: 'Correlación de Esfuerzo (Ejecuciones) y Nota', font: {size: 16, weight: 'normal'} },
+                        title: { display: true, text: 'Correlación de Esfuerzo (Evaluaciones) y Nota', font: {size: 16, weight: 'normal'} },
                         zoom: zoomOptions
                     },
                     scales: {
-                        x: { title: { display: true, text: 'Nº Ejecuciones + Depuraciones' } },
+                        x: { title: { display: true, text: 'Nº Evaluaciones (Intentos de calificación)' } },
                         y: { title: { display: true, text: 'Nota' }, min: 0, max: 10 }
                     }
                 }
@@ -351,7 +351,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 data: {
                     labels: labels,
                     datasets: [{
-                        label: 'Nota Media',
+                        label: 'Índice de Frustración (Evaluaciones)',
                         data: data,
                         backgroundColor: primaryColor,
                         borderRadius: 4
@@ -360,7 +360,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 options: {
                     responsive: true,
                     plugins: { 
-                        title: { display: true, text: 'Dificultad Promedio por Ejercicio', font: {size: 16, weight: 'normal'} },
+                        title: { display: true, text: 'Dificultad por Actividad (Índice de Frustración: Evaluaciones / Nota)', font: {size: 16, weight: 'normal'} },
                         zoom: zoomOptions
                     },
                     scales: { 
