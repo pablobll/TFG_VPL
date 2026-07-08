@@ -103,6 +103,10 @@ echo '<style>
     }
     .badge-pass { color: #28a745; font-weight: bold; }
     .badge-fail { color: #dc3545; font-weight: bold; }
+    .badge { padding: 4px 8px; border-radius: 12px; color: white; font-size: 0.85em; font-weight: bold; }
+    .badge-danger { background: #dc3545; }
+    .badge-warning { background: #ffc107; color: #212529; }
+    .badge-success { background: #28a745; }
 </style>';
 
 echo '<div class="vpl-dashboard-wrapper">';
@@ -114,9 +118,9 @@ echo '<label>Tipo de Visualización</label>';
 echo '<select id="chartType">';
 echo '<option value="rendimiento">Distribución de Rendimiento (Notas)</option>';
 echo '<option value="esfuerzo">Patrón de Frustración (Intentos vs Nota)</option>';
-echo '<option value="dificultad">Dificultad por Actividad (Nota Media)</option>';
-echo '<option value="evolucion">Evolución Temporal (Entregas diarias)</option>
-                <option value="riesgo">Detector de Riesgo</option>';
+echo '<option value="dificultad">Dificultad por Actividad (Índice de Frustración)</option>';
+echo '<option value="evolucion">Evolución Temporal (Entregas diarias)</option>';
+echo '<option value="riesgo">Detector de Riesgo</option>';
 echo '</select>';
 echo '</div>';
 
@@ -135,10 +139,10 @@ echo '<label id="specificFilterLabel">Seleccionar...</label>';
 echo '<select id="filterSpecific"></select>';
 echo '</div>';
 
-echo '</div>'; // Fin Panel
+echo '</div>';
 
 echo '<div class="vpl-canvas-container" style="position:relative;">';
-echo '<div style="position:absolute; top: 15px; right: 20px; display:flex; gap: 8px; z-index: 10;">';
+echo '<div id="zoomControls" style="position:absolute; top: 15px; right: 20px; display:flex; gap: 8px; z-index: 10;">';
 echo '<button type="button" id="btnZoomIn" style="padding: 6px 12px; background: #e9ecef; color: #212529; border: 1px solid #ced4da; border-radius: 4px; cursor: pointer; font-weight:bold;">+</button>';
 echo '<button type="button" id="btnZoomOut" style="padding: 6px 12px; background: #e9ecef; color: #212529; border: 1px solid #ced4da; border-radius: 4px; cursor: pointer; font-weight:bold;">-</button>';
 echo '<button type="button" id="btnZoomReset" style="padding: 6px 12px; background: #e9ecef; color: #212529; border: 1px solid #ced4da; border-radius: 4px; cursor: pointer;">Reset</button>';
@@ -148,13 +152,12 @@ echo '</div>';
 
 echo '<div class="vpl-table-container">';
 echo '<table class="vpl-table">';
-echo '<thead><tr><th>Alumno</th><th>Curso</th><th>Grupo</th><th>Actividad</th><th>Nº Evaluaciones</th><th>Nota</th><th>Fecha</th>
-                    <th>Estado</th></tr></thead>';
+echo '<thead><tr><th>Alumno</th><th>Curso</th><th>Grupo</th><th>Actividad</th><th>Nº Evaluaciones</th><th>Nota</th><th>Fecha</th><th>Estado</th></tr></thead>';
 echo '<tbody id="dataTableBody"></tbody>';
 echo '</table>';
 echo '</div>';
 
-echo '</div>'; // Fin Wrapper
+echo '</div>';
 
 echo "
 <script>
@@ -167,7 +170,7 @@ document.addEventListener('DOMContentLoaded', function() {
         zoom: { wheel: { enabled: false }, pinch: { enabled: false }, mode: 'xy' }
     };
 
-    const primaryColor = '#007bff'; // Azul clásico Bootstrap/Moodle
+    const primaryColor = '#007bff';
 
     const chartTypeEl = document.getElementById('chartType');
     const filterModeEl = document.getElementById('filterMode');
@@ -248,6 +251,7 @@ document.addEventListener('DOMContentLoaded', function() {
             currentChart = new Chart(ctx, { type: 'bar', data: { labels: ['Sin datos'], datasets: [{data:[0]}] } });
             tableBody.innerHTML = '<tr><td colspan=\"7\" style=\"text-align:center\">No hay entregas registradas.</td></tr>';
             return;
+        }
 
         let studentRiskMap = {};
         let studentStats = {};
@@ -264,15 +268,13 @@ document.addEventListener('DOMContentLoaded', function() {
             let avgEvals = st.sumEvals / st.count;
             
             if (avgGrade < 5.0 && avgEvals > 5) {
-                studentRiskMap[uid] = { label: "Riesgo Alto", class: "badge-danger" };
+                studentRiskMap[uid] = { label: 'Riesgo Alto', class: 'badge-danger' };
             } else if (avgGrade < 5.0 || (avgGrade < 6.0 && avgEvals > 3)) {
-                studentRiskMap[uid] = { label: "Precaución", class: "badge-warning" };
+                studentRiskMap[uid] = { label: 'Precaución', class: 'badge-warning' };
             } else {
-                studentRiskMap[uid] = { label: "Seguro", class: "badge-success" };
+                studentRiskMap[uid] = { label: 'Seguro', class: 'badge-success' };
             }
         });
-
-        }
 
         tableBody.innerHTML = '';
         let sortedForTable = [...filteredSubmissions].sort((a,b) => b.datesubmitted - a.datesubmitted);
@@ -282,18 +284,28 @@ document.addEventListener('DOMContentLoaded', function() {
             let dateObj = new Date(s.datesubmitted * 1000);
             let dateStr = dateObj.toLocaleDateString();
             let gradeClass = s.grade >= 5.0 ? 'badge-pass' : 'badge-fail';
+            let risk = studentRiskMap[s.userid];
+            let riskBadge = `<span class=\"badge \${risk.class}\">\${risk.label}</span>`;
             
             tr.innerHTML = `
                 <td>Alumno \${s.userid}</td>
                 <td>Curso \${s.course}</td>
                 <td>\${s.groupid == '0' ? '-' : s.groupid}</td>
                 <td>\${s.vpl_name}</td>
-                <td>\${s.run_count}</td>
+                <td>\${s.nevaluations}</td>
                 <td class=\"\${gradeClass}\">\${s.grade.toFixed(2)}</td>
                 <td>\${dateStr}</td>
+                <td>\${riskBadge}</td>
             `;
             tableBody.appendChild(tr);
         });
+
+        let zoomControls = document.getElementById('zoomControls');
+        if (type === 'esfuerzo' || type === 'evolucion') {
+            zoomControls.style.display = 'flex';
+        } else {
+            zoomControls.style.display = 'none';
+        }
 
         if (type === 'rendimiento') {
             let gradesDist = { 'Suspenso (<5)': 0, 'Aprobado (5-7)': 0, 'Notable (7-9)': 0, 'Sobresaliente (>9)': 0 };
@@ -334,7 +346,9 @@ document.addEventListener('DOMContentLoaded', function() {
         } else if (type === 'esfuerzo') {
             let scatterData = filteredSubmissions.map(s => ({
                 x: s.nevaluations, 
-                y: s.grade
+                y: s.grade,
+                userid: s.userid,
+                vpl_name: s.vpl_name
             }));
 
             currentChart = new Chart(ctx, {
@@ -343,7 +357,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     datasets: [{
                         label: 'Evaluaciones vs Nota',
                         data: scatterData,
-                        backgroundColor: primaryColor,
+                        backgroundColor: 'rgba(13, 110, 253, 0.5)',
                         pointRadius: 5,
                         pointHoverRadius: 7
                     }]
@@ -352,7 +366,15 @@ document.addEventListener('DOMContentLoaded', function() {
                     responsive: true,
                     plugins: { 
                         title: { display: true, text: 'Correlación de Esfuerzo (Evaluaciones) y Nota', font: {size: 16, weight: 'normal'} },
-                        zoom: zoomOptions
+                        zoom: zoomOptions,
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let point = context.raw;
+                                    return `Alumno: \${point.userid} | Actividad: \${point.vpl_name} | Evaluaciones: \${point.x} | Nota: \${point.y.toFixed(2)}`;
+                                }
+                            }
+                        }
                     },
                     scales: {
                         x: { title: { display: true, text: 'Nº Evaluaciones (Intentos de calificación)' } },
@@ -362,15 +384,21 @@ document.addEventListener('DOMContentLoaded', function() {
             });
 
         } else if (type === 'dificultad') {
-            let vplGrades = {};
+            let vplStats = {};
             filteredSubmissions.forEach(s => {
-                if(!vplGrades[s.vpl_name]) vplGrades[s.vpl_name] = {sum:0, count:0};
-                vplGrades[s.vpl_name].sum += s.grade;
-                vplGrades[s.vpl_name].count++;
+                if(!vplStats[s.vpl_name]) vplStats[s.vpl_name] = {sumGrade:0, sumEvals:0, count:0};
+                vplStats[s.vpl_name].sumGrade += s.grade;
+                vplStats[s.vpl_name].sumEvals += s.nevaluations;
+                vplStats[s.vpl_name].count++;
             });
             
-            let labels = Object.keys(vplGrades).sort();
-            let data = labels.map(l => vplGrades[l].sum / vplGrades[l].count);
+            let labels = Object.keys(vplStats).sort((a, b) => a.localeCompare(b, undefined, {numeric: true, sensitivity: 'base'}));
+            let data = labels.map(l => {
+                let st = vplStats[l];
+                let avgEvals = st.sumEvals / st.count;
+                let avgGrade = st.sumGrade / st.count;
+                return avgEvals / (avgGrade > 0 ? avgGrade : 1);
+            });
 
             currentChart = new Chart(ctx, {
                 type: 'bar',
@@ -390,8 +418,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         zoom: zoomOptions
                     },
                     scales: { 
-                        x: { grid: {display: false} },
-                        y: { min: 0, max: 10 } 
+                        x: { grid: {display: false} }
                     }
                 }
             });
@@ -412,11 +439,11 @@ document.addEventListener('DOMContentLoaded', function() {
                         borderWidth: 2
                     }]
                 },
-                options: {
-                    responsive: true,
-                    plugins: {
+                options: { 
+                    responsive: true, 
+                    plugins: { 
                         title: { display: true, text: 'Detector de Riesgo', font: {size: 16, weight: 'normal'} }
-                    }
+                    } 
                 }
             });
 
@@ -424,7 +451,10 @@ document.addEventListener('DOMContentLoaded', function() {
             let sortedSubs = [...filteredSubmissions].sort((a,b) => a.datesubmitted - b.datesubmitted);
             let timeData = sortedSubs.map(s => ({
                 x: new Date(s.datesubmitted * 1000), 
-                y: s.grade
+                y: s.grade,
+                userid: s.userid,
+                groupid: s.groupid,
+                vpl_name: s.vpl_name
             }));
 
             currentChart = new Chart(ctx, {
@@ -438,14 +468,24 @@ document.addEventListener('DOMContentLoaded', function() {
                         borderWidth: 2,
                         pointBackgroundColor: primaryColor,
                         tension: 0.2,
-                        fill: true
+                        showLine: mode === 'alumno',
+                        fill: mode === 'alumno'
                     }]
                 },
                 options: {
                     responsive: true,
                     plugins: { 
                         title: { display: true, text: 'Evolución Temporal de las Calificaciones', font: {size: 16, weight: 'normal'} },
-                        zoom: zoomOptions
+                        zoom: zoomOptions,
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let point = context.raw;
+                                    let groupStr = point.groupid == '0' ? '-' : point.groupid;
+                                    return `Nota: \${point.y.toFixed(2)} | Actividad: \${point.vpl_name} | Alumno: \${point.userid} | Grupo: \${groupStr}`;
+                                }
+                            }
+                        }
                     },
                     scales: {
                         x: { 
