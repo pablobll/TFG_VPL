@@ -15,7 +15,9 @@ RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install -j$(nproc) gd \
     && docker-php-ext-install mysqli intl zip soap exif
 
-RUN echo "max_input_vars = 5000" > /usr/local/etc/php/conf.d/moodle.ini
+RUN echo "max_input_vars = 5000" >> /usr/local/etc/php/conf.d/moodle.ini
+RUN echo "post_max_size = 120M" >> /usr/local/etc/php/conf.d/moodle.ini
+RUN echo "upload_max_filesize = 120M" >> /usr/local/etc/php/conf.d/moodle.ini
 
 RUN wget -q https://github.com/moodle/moodle/archive/refs/tags/v4.4.0.tar.gz -O /tmp/moodle.tar.gz \
     && tar -zxvf /tmp/moodle.tar.gz -C /var/www/html --strip-components=1 \

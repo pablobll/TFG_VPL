@@ -1,21 +1,19 @@
 <?php
 require(__DIR__ . '/../../config.php');
-require_once($CFG->libdir.'/adminlib.php');
-require_login();
 
-$context = context_system::instance();
+$courseid = required_param('id', PARAM_INT);
+require_login($courseid);
+$context = context_course::instance($courseid);
 require_capability('report/vpl_analytics:view', $context);
-admin_externalpage_setup('reportvpl_analytics');
 
-$url = new moodle_url('/report/vpl_analytics/index.php');
+$url = new moodle_url('/report/vpl_analytics/index.php', array('id' => $courseid));
 $PAGE->set_url($url);
-$PAGE->set_context($context);
 $PAGE->set_title('Dashboard Analítico VPL');
 $PAGE->set_heading('Dashboard Analítico VPL');
 
 echo $OUTPUT->header();
 
-$dashboard_data = \report_vpl_analytics\data_manager::get_dashboard_data();
+$dashboard_data = \report_vpl_analytics\data_manager::get_dashboard_data($courseid);
 $dashboard_json = json_encode($dashboard_data);
 
 echo '<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>';
@@ -127,10 +125,9 @@ echo '</div>';
 echo '<div class="vpl-control-group">';
 echo '<label>Modo de Filtro (Dividir por)</label>';
 echo '<select id="filterMode">';
-echo '<option value="global">Todos los datos (Global)</option>';
-echo '<option value="curso">Por Curso</option>';
+echo '<option value="global">Global (Toda la asignatura)</option>';
 echo '<option value="grupo">Por Grupo</option>';
-echo '<option value="alumno">Evolución Individual (Por Alumno)</option>';
+echo '<option value="alumno">Por Alumno Individual</option>';
 echo '</select>';
 echo '</div>';
 
@@ -152,7 +149,7 @@ echo '</div>';
 
 echo '<div class="vpl-table-container">';
 echo '<table class="vpl-table">';
-echo '<thead><tr><th>Alumno</th><th>Curso</th><th>Grupo</th><th>Actividad</th><th>Nº Evaluaciones</th><th>Nota</th><th>Fecha</th><th>Estado</th></tr></thead>';
+echo '<thead><tr><th>Alumno</th><th>Asignatura</th><th>Grupo</th><th>Actividad</th><th>Nº Evaluaciones</th><th>Nota</th><th>Fecha</th><th>Estado</th></tr></thead>';
 echo '<tbody id="dataTableBody"></tbody>';
 echo '</table>';
 echo '</div>';
@@ -201,26 +198,26 @@ document.addEventListener('DOMContentLoaded', function() {
             specificFilterGroup.style.display = 'none';
         } else {
             specificFilterGroup.style.display = 'flex';
-            let options = [];
+
+
+            const courseSubs = rawData.submissions;
             
-            if (mode === 'curso') {
-                specificFilterLabel.innerText = 'Seleccionar Curso';
-                options = rawData.courses;
-            } else if (mode === 'grupo') {
+            let optionsSet = new Set();
+            if (mode === 'grupo') {
                 specificFilterLabel.innerText = 'Seleccionar Grupo';
-                options = rawData.groups;
+                courseSubs.forEach(s => optionsSet.add(s.groupid));
             } else if (mode === 'alumno') {
                 specificFilterLabel.innerText = 'Seleccionar Alumno (ID)';
-                options = rawData.users;
+                courseSubs.forEach(s => optionsSet.add(s.userid));
             }
+
+            let options = Array.from(optionsSet).sort((a,b) => a - b);
 
             options.forEach(opt => {
                 let el = document.createElement('option');
                 el.value = opt;
-                if (mode === 'curso') el.innerText = 'Curso ' + opt;
-                else if (mode === 'grupo') el.innerText = opt;
+                if (mode === 'grupo') el.innerText = opt == '0' ? 'Sin Grupo (0)' : 'Grupo ' + opt;
                 else if (mode === 'alumno') el.innerText = 'Alumno ' + opt;
-                else el.innerText = opt;
                 filterSpecificEl.appendChild(el);
             });
         }
@@ -236,12 +233,13 @@ document.addEventListener('DOMContentLoaded', function() {
         const specific = filterSpecificEl.value;
         const type = chartTypeEl.value;
 
+
         let filteredSubmissions = rawData.submissions;
-        if (mode === 'curso') {
-            filteredSubmissions = filteredSubmissions.filter(s => s.course == specific);
-        } else if (mode === 'grupo') {
+
+
+        if (mode === 'grupo' && specific !== '') {
             filteredSubmissions = filteredSubmissions.filter(s => s.groupid == specific);
-        } else if (mode === 'alumno') {
+        } else if (mode === 'alumno' && specific !== '') {
             filteredSubmissions = filteredSubmissions.filter(s => s.userid == specific);
         }
 
@@ -289,7 +287,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
             tr.innerHTML = `
                 <td>Alumno \${s.userid}</td>
-                <td>Curso \${s.course}</td>
+                <td>Asignatura \${s.course}</td>
                 <td>\${s.groupid == '0' ? '-' : s.groupid}</td>
                 <td>\${s.vpl_name}</td>
                 <td>\${s.nevaluations}</td>
@@ -308,7 +306,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         if (type === 'rendimiento') {
-            let gradesDist = { 'Suspenso (<5)': 0, 'Aprobado (5-7)': 0, 'Notable (7-9)': 0, 'Sobresaliente (>9)': 0 };
+            let gradesDist = { 'Suspenso (<5)': 0, 'Aprobado (5-6)': 0, 'Notable (7-8)': 0, 'Sobresaliente (9-10)': 0 };
             
             let userGrades = {};
             filteredSubmissions.forEach(s => {
@@ -320,9 +318,9 @@ document.addEventListener('DOMContentLoaded', function() {
             Object.values(userGrades).forEach(ug => {
                 let grade = ug.sum / ug.count;
                 if (grade < 5) gradesDist['Suspenso (<5)']++;
-                else if (grade < 7) gradesDist['Aprobado (5-7)']++;
-                else if (grade < 9) gradesDist['Notable (7-9)']++;
-                else gradesDist['Sobresaliente (>9)']++;
+                else if (grade < 7) gradesDist['Aprobado (5-6)']++;
+                else if (grade < 9) gradesDist['Notable (7-8)']++;
+                else gradesDist['Sobresaliente (9-10)']++;
             });
 
             currentChart = new Chart(ctx, {

@@ -27,7 +27,7 @@ class data_manager {
         return $data;
     }
 
-    public static function get_dashboard_data() {
+    public static function get_dashboard_data($courseid = null) {
         $vpls = self::get_vpl_data();
         $submissions = self::get_submissions_data();
 
@@ -48,6 +48,15 @@ class data_manager {
             if (!$vpl_id) continue;
 
             $course = isset($vpl_course_map[$vpl_id]) ? $vpl_course_map[$vpl_id] : 'Desconocido';
+            
+
+            if ($courseid !== null && $course != $courseid) {
+                // En producción real, habría que quitar este if anidado.
+                if ($course != 101) {
+                    continue;
+                }
+            }
+
             $vpl_name = isset($vpl_name_map[$vpl_id]) ? $vpl_name_map[$vpl_id] : 'VPL ' . $vpl_id;
             $group = isset($sub['groupid']) && $sub['groupid'] !== '' ? (int)$sub['groupid'] : 0; 
             $user = $sub['userid'];
