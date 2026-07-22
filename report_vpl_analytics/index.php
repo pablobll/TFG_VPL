@@ -1,4 +1,5 @@
 <?php
+ini_set('memory_limit', '512M');
 require(__DIR__ . '/../../config.php');
 
 $courseid = required_param('id', PARAM_INT);
@@ -22,124 +23,64 @@ echo '<script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8"></script>';
 echo '<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1"></script>';
 
 echo '<style>
-    .vpl-dashboard-wrapper {
-        padding: 20px;
-        font-family: inherit;
-    }
-    .vpl-control-panel {
-        background: #f8f9fa;
-        border: 1px solid #dee2e6;
-        border-radius: 8px;
-        padding: 20px;
-        margin-bottom: 20px;
-        display: flex;
-        gap: 20px;
-        align-items: flex-end;
-        flex-wrap: wrap;
-    }
-    .vpl-control-group {
-        display: flex;
-        flex-direction: column;
-        flex: 1;
-        min-width: 250px;
-    }
-    .vpl-control-group label {
-        font-weight: bold;
-        margin-bottom: 8px;
-        color: #495057;
-        font-size: 0.9em;
-    }
-    .vpl-control-group select {
-        padding: 8px;
-        border-radius: 4px;
-        border: 1px solid #ced4da;
-        background: #ffffff;
-        color: #212529;
-    }
-    .vpl-canvas-container {
-        background: #ffffff;
-        border: 1px solid #dee2e6;
-        border-radius: 8px;
-        padding: 30px;
-        height: 500px;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-    }
-    canvas {
-        max-width: 100%;
-        max-height: 100%;
-    }
-    .vpl-table-container {
-        margin-top: 20px;
-        background: #ffffff;
-        border: 1px solid #dee2e6;
-        border-radius: 8px;
-        padding: 20px;
-        max-height: 400px;
-        overflow-y: auto;
-    }
-    .vpl-table {
-        width: 100%;
-        border-collapse: collapse;
-        color: #212529;
-        font-size: 0.9em;
-    }
-    .vpl-table th {
-        background: #f8f9fa;
-        padding: 12px;
-        text-align: left;
-        font-weight: bold;
-        border-bottom: 2px solid #dee2e6;
-    }
-    .vpl-table td {
-        padding: 10px 12px;
-        border-bottom: 1px solid #e9ecef;
-    }
-    .vpl-table tbody tr:hover {
-        background: #f1f3f5;
-    }
-    .badge-pass { color: #28a745; font-weight: bold; }
-    .badge-fail { color: #dc3545; font-weight: bold; }
+    .vpl-dashboard-wrapper { padding: 20px; font-family: inherit; }
+    .vpl-kpi-container { display: flex; gap: 20px; margin-bottom: 20px; flex-wrap: wrap; }
+    .vpl-kpi-card { background: #fff; border: 1px solid #dee2e6; border-radius: 8px; padding: 20px; flex: 1; min-width: 200px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+    .vpl-kpi-title { font-size: 0.9em; color: #6c757d; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; }
+    .vpl-kpi-value { font-size: 2.5em; font-weight: bold; color: #007bff; margin-top: 10px; }
+    .vpl-kpi-value.danger { color: #dc3545; }
+    .vpl-control-panel { background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; padding: 20px; margin-bottom: 20px; display: flex; gap: 20px; align-items: flex-end; flex-wrap: wrap; }
+    .vpl-control-group { display: flex; flex-direction: column; flex: 1; min-width: 250px; }
+    .vpl-control-group label { font-weight: bold; margin-bottom: 8px; color: #495057; font-size: 0.9em; }
+    .vpl-control-group select { padding: 8px; border-radius: 4px; border: 1px solid #ced4da; background: #ffffff; color: #212529; }
+    .vpl-canvas-container { background: #ffffff; border: 1px solid #dee2e6; border-radius: 8px; padding: 30px; height: 500px; display: flex; justify-content: center; align-items: center; }
+    canvas { max-width: 100%; max-height: 100%; }
+    .vpl-table-container { margin-top: 20px; background: #ffffff; border: 1px solid #dee2e6; border-radius: 8px; padding: 20px; max-height: 500px; overflow-y: auto; }
+    .vpl-table { width: 100%; border-collapse: collapse; color: #212529; font-size: 0.9em; }
+    .vpl-table th { background: #f8f9fa; padding: 12px; text-align: left; font-weight: bold; border-bottom: 2px solid #dee2e6; position: sticky; top: 0; }
+    .vpl-table td { padding: 10px 12px; border-bottom: 1px solid #e9ecef; }
+    .vpl-table tbody tr:hover { background: #f1f3f5; }
     .badge { padding: 4px 8px; border-radius: 12px; color: white; font-size: 0.85em; font-weight: bold; }
-    .badge-danger { background: #dc3545; }
-    .badge-warning { background: #ffc107; color: #212529; }
-    .badge-success { background: #28a745; }
 </style>';
 
 echo '<div class="vpl-dashboard-wrapper">';
+
+echo '<div class="vpl-kpi-container">';
+echo '<div class="vpl-kpi-card"><div class="vpl-kpi-title">Nota Media Global</div><div class="vpl-kpi-value" id="kpiAvgGrade">--</div></div>';
+echo '<div class="vpl-kpi-card"><div class="vpl-kpi-title">Entregas Totales</div><div class="vpl-kpi-value" id="kpiTotalSubs">--</div></div>';
+echo '<div class="vpl-kpi-card"><div class="vpl-kpi-title">Alumnos Activos</div><div class="vpl-kpi-value" id="kpiActiveUsers">--</div></div>';
+echo '<div class="vpl-kpi-card"><div class="vpl-kpi-title">Alumnos Sin Actividad</div><div class="vpl-kpi-value danger" id="kpiInactiveUsers">--</div></div>';
+echo '</div>';
 
 echo '<div class="vpl-control-panel">';
 
 echo '<div class="vpl-control-group">';
 echo '<label>Tipo de Visualización</label>';
 echo '<select id="chartType">';
-echo '<option value="rendimiento">Distribución de Rendimiento (Notas)</option>';
-echo '<option value="esfuerzo">Patrón de Frustración (Intentos vs Nota)</option>';
-echo '<option value="dificultad">Dificultad por Actividad (Índice de Frustración)</option>';
-echo '<option value="evolucion">Evolución Temporal (Entregas diarias)</option>';
-echo '<option value="riesgo">Detector de Riesgo</option>';
+echo '<option value="rendimiento">Distribución de Notas Finales</option>';
+echo '<option value="evolucion">Evolución de Entregas en el Tiempo</option>';
+echo '<option value="esfuerzo">Esfuerzo (Ejecuciones vs Evaluaciones)</option>';
+echo '<option value="dificultad">Dificultad por Actividad</option>';
 echo '</select>';
 echo '</div>';
 
 echo '<div class="vpl-control-group">';
-echo '<label>Modo de Filtro (Dividir por)</label>';
-echo '<select id="filterMode">';
-echo '<option value="global">Global (Toda la asignatura)</option>';
-echo '<option value="grupo">Por Grupo</option>';
-echo '<option value="alumno">Por Alumno Individual</option>';
+echo '<label>Filtrar por Grupo</label>';
+echo '<select id="filterGroup">';
+echo '<option value="all">Todos los grupos</option>';
 echo '</select>';
 echo '</div>';
 
-echo '<div class="vpl-control-group" id="specificFilterGroup" style="display: none;">';
-echo '<label id="specificFilterLabel">Seleccionar...</label>';
-echo '<select id="filterSpecific"></select>';
+echo '<div class="vpl-control-group">';
+echo '<label>Filtrar por Actividad VPL</label>';
+echo '<select id="filterVpl">';
+echo '<option value="all">Todas las actividades</option>';
+echo '</select>';
 echo '</div>';
-
 echo '</div>';
 
 echo '<div class="vpl-canvas-container" style="position:relative;">';
-echo '<div id="zoomControls" style="position:absolute; top: 15px; right: 20px; display:flex; gap: 8px; z-index: 10;">';
+echo '<div id="zoomControls" style="position:absolute; top: 15px; right: 20px; display:flex; gap: 8px; z-index: 10; display:none;">';
 echo '<button type="button" id="btnZoomIn" style="padding: 6px 12px; background: #e9ecef; color: #212529; border: 1px solid #ced4da; border-radius: 4px; cursor: pointer; font-weight:bold;">+</button>';
 echo '<button type="button" id="btnZoomOut" style="padding: 6px 12px; background: #e9ecef; color: #212529; border: 1px solid #ced4da; border-radius: 4px; cursor: pointer; font-weight:bold;">-</button>';
 echo '<button type="button" id="btnZoomReset" style="padding: 6px 12px; background: #e9ecef; color: #212529; border: 1px solid #ced4da; border-radius: 4px; cursor: pointer;">Reset</button>';
@@ -149,7 +90,7 @@ echo '</div>';
 
 echo '<div class="vpl-table-container">';
 echo '<table class="vpl-table">';
-echo '<thead><tr><th>Alumno</th><th>Asignatura</th><th>Grupo</th><th>Actividad</th><th>Nº Evaluaciones</th><th>Nota</th><th>Fecha</th><th>Estado</th></tr></thead>';
+echo '<thead><tr><th>Alumno (ID)</th><th>Grupo</th><th>Entregas</th><th>Nota Máx.</th><th>Primera Entrega</th><th>Última Entrega</th><th>Ejecuciones</th><th>Evals. Auto.</th></tr></thead>';
 echo '<tbody id="dataTableBody"></tbody>';
 echo '</table>';
 echo '</div>';
@@ -161,20 +102,16 @@ echo "
 document.addEventListener('DOMContentLoaded', function() {
     const rawData = {$dashboard_json};
     let currentChart = null;
+    const primaryColor = '#007bff';
 
+    const chartTypeEl = document.getElementById('chartType');
+    const filterGroupEl = document.getElementById('filterGroup');
+    const filterVplEl = document.getElementById('filterVpl');
+    
     const zoomOptions = {
         pan: { enabled: true, mode: 'xy' },
         zoom: { wheel: { enabled: false }, pinch: { enabled: false }, mode: 'xy' }
     };
-
-    const primaryColor = '#007bff';
-
-    const chartTypeEl = document.getElementById('chartType');
-    const filterModeEl = document.getElementById('filterMode');
-    const filterSpecificEl = document.getElementById('filterSpecific');
-    const specificFilterGroup = document.getElementById('specificFilterGroup');
-    const specificFilterLabel = document.getElementById('specificFilterLabel');
-    const tableBody = document.getElementById('dataTableBody');
 
     document.getElementById('btnZoomIn').addEventListener('click', () => {
         if (currentChart && typeof currentChart.zoom === 'function') currentChart.zoom(1.2);
@@ -186,117 +123,129 @@ document.addEventListener('DOMContentLoaded', function() {
         if (currentChart && typeof currentChart.resetZoom === 'function') currentChart.resetZoom();
     });
 
-    chartTypeEl.addEventListener('change', renderChart);
-    filterModeEl.addEventListener('change', updateSpecificFilters);
-    filterSpecificEl.addEventListener('change', renderChart);
+    let groupMap = {};
+    rawData.groups.forEach(g => {
+        groupMap[g.id] = g.name;
+        let opt = document.createElement('option');
+        opt.value = g.id; opt.innerText = g.name;
+        filterGroupEl.appendChild(opt);
+    });
+    
+    let uniqueVpls = {};
+    rawData.submissions.forEach(s => { uniqueVpls[s.vpl] = s.vpl_name; });
+    Object.keys(uniqueVpls).forEach(vplId => {
+        let opt = document.createElement('option');
+        opt.value = vplId; opt.innerText = uniqueVpls[vplId];
+        filterVplEl.appendChild(opt);
+    });
 
-    function updateSpecificFilters() {
-        const mode = filterModeEl.value;
-        filterSpecificEl.innerHTML = ''; 
+    chartTypeEl.addEventListener('change', updateDashboard);
+    filterGroupEl.addEventListener('change', updateDashboard);
+    filterVplEl.addEventListener('change', updateDashboard);
 
-        if (mode === 'global') {
-            specificFilterGroup.style.display = 'none';
-        } else {
-            specificFilterGroup.style.display = 'flex';
+    function updateDashboard() {
+        const type = chartTypeEl.value;
+        const groupId = filterGroupEl.value;
+        const vplId = filterVplEl.value;
 
-
-            const courseSubs = rawData.submissions;
-            
-            let optionsSet = new Set();
-            if (mode === 'grupo') {
-                specificFilterLabel.innerText = 'Seleccionar Grupo';
-                courseSubs.forEach(s => optionsSet.add(s.groupid));
-            } else if (mode === 'alumno') {
-                specificFilterLabel.innerText = 'Seleccionar Alumno (ID)';
-                courseSubs.forEach(s => optionsSet.add(s.userid));
-            }
-
-            let options = Array.from(optionsSet).sort((a,b) => a - b);
-
-            options.forEach(opt => {
-                let el = document.createElement('option');
-                el.value = opt;
-                if (mode === 'grupo') el.innerText = opt == '0' ? 'Sin Grupo (0)' : 'Grupo ' + opt;
-                else if (mode === 'alumno') el.innerText = 'Alumno ' + opt;
-                filterSpecificEl.appendChild(el);
-            });
+        let filtered = rawData.submissions;
+        if (groupId !== 'all') {
+            const gid = parseInt(groupId);
+            filtered = filtered.filter(s => s.user_groups && s.user_groups.includes(gid));
         }
-        renderChart();
+        if (vplId !== 'all') filtered = filtered.filter(s => s.vpl == vplId);
+
+        updateKPIs(filtered);
+        updateTable(filtered);
+        renderChart(type, filtered);
     }
 
-    function renderChart() {
-        if (currentChart) {
-            currentChart.destroy();
-        }
-
-        const mode = filterModeEl.value;
-        const specific = filterSpecificEl.value;
-        const type = chartTypeEl.value;
-
-
-        let filteredSubmissions = rawData.submissions;
-
-
-        if (mode === 'grupo' && specific !== '') {
-            filteredSubmissions = filteredSubmissions.filter(s => s.groupid == specific);
-        } else if (mode === 'alumno' && specific !== '') {
-            filteredSubmissions = filteredSubmissions.filter(s => s.userid == specific);
-        }
-
-        const ctx = document.getElementById('mainChart').getContext('2d');
-
-        if (filteredSubmissions.length === 0) {
-            currentChart = new Chart(ctx, { type: 'bar', data: { labels: ['Sin datos'], datasets: [{data:[0]}] } });
-            tableBody.innerHTML = '<tr><td colspan=\"7\" style=\"text-align:center\">No hay entregas registradas.</td></tr>';
+    function updateKPIs(subs) {
+        if (subs.length === 0) {
+            document.getElementById('kpiAvgGrade').innerText = '0.00';
+            document.getElementById('kpiTotalSubs').innerText = '0';
+            document.getElementById('kpiActiveUsers').innerText = '0';
+            document.getElementById('kpiInactiveUsers').innerText = rawData.total_students || 0;
             return;
         }
 
-        let studentRiskMap = {};
+        let sumGrades = 0, countGrades = 0;
+        let activeUsers = new Set();
+        subs.forEach(s => {
+            if (s.grade !== null) { sumGrades += s.grade; countGrades++; }
+            activeUsers.add(s.userid);
+        });
+
+        const avgGrade = countGrades > 0 ? (sumGrades / countGrades).toFixed(2) : '0.00';
+        const totalSubs = subs.length;
+        const activeCount = activeUsers.size;
+        const inactiveCount = Math.max(0, (rawData.total_students || 0) - activeCount);
+
+        document.getElementById('kpiAvgGrade').innerText = avgGrade;
+        document.getElementById('kpiTotalSubs').innerText = totalSubs;
+        document.getElementById('kpiActiveUsers').innerText = activeCount + (rawData.total_students ? ' / ' + rawData.total_students : '');
+        document.getElementById('kpiInactiveUsers').innerText = inactiveCount;
+    }
+
+    function updateTable(subs) {
+        const tbody = document.getElementById('dataTableBody');
+        tbody.innerHTML = '';
+        if (subs.length === 0) {
+            tbody.innerHTML = '<tr><td colspan=\"8\" style=\"text-align:center\">No hay datos para los filtros seleccionados.</td></tr>';
+            return;
+        }
+
         let studentStats = {};
-        filteredSubmissions.forEach(s => {
-            if(!studentStats[s.userid]) studentStats[s.userid] = {sumGrade:0, count:0, sumEvals:0};
-            studentStats[s.userid].sumGrade += s.grade;
-            studentStats[s.userid].sumEvals += s.nevaluations;
-            studentStats[s.userid].count++;
-        });
-
-        Object.keys(studentStats).forEach(uid => {
-            let st = studentStats[uid];
-            let avgGrade = st.sumGrade / st.count;
-            let avgEvals = st.sumEvals / st.count;
-            
-            if (avgGrade < 5.0 && avgEvals > 5) {
-                studentRiskMap[uid] = { label: 'Riesgo Alto', class: 'badge-danger' };
-            } else if (avgGrade < 5.0 || (avgGrade < 6.0 && avgEvals > 3)) {
-                studentRiskMap[uid] = { label: 'Precaución', class: 'badge-warning' };
-            } else {
-                studentRiskMap[uid] = { label: 'Seguro', class: 'badge-success' };
+        subs.forEach(s => {
+            if(!studentStats[s.userid]) {
+                let gNames = (s.user_groups || []).map(gid => groupMap[gid] || gid).join(', ');
+                if (!gNames) gNames = 'Sin Grupo';
+                
+                studentStats[s.userid] = {
+                    group: gNames, subs: 0, maxGrade: 0, 
+                    firstSub: s.datesubmitted, lastSub: s.datesubmitted,
+                    runs: 0, evals: 0
+                };
             }
+            let st = studentStats[s.userid];
+            st.subs++;
+            if(s.grade !== null && s.grade > st.maxGrade) st.maxGrade = s.grade;
+            if(s.datesubmitted < st.firstSub) st.firstSub = s.datesubmitted;
+            if(s.datesubmitted > st.lastSub) st.lastSub = s.datesubmitted;
+            st.runs += s.run_count;
+            st.evals += s.nevaluations;
         });
 
-        tableBody.innerHTML = '';
-        let sortedForTable = [...filteredSubmissions].sort((a,b) => b.datesubmitted - a.datesubmitted);
-        
-        sortedForTable.forEach(s => {
-            let tr = document.createElement('tr');
-            let dateObj = new Date(s.datesubmitted * 1000);
-            let dateStr = dateObj.toLocaleDateString();
-            let gradeClass = s.grade >= 5.0 ? 'badge-pass' : 'badge-fail';
-            let risk = studentRiskMap[s.userid];
-            let riskBadge = `<span class=\"badge \${risk.class}\">\${risk.label}</span>`;
+        let sortedUsers = Object.keys(studentStats).sort((a,b) => a - b);
+        sortedUsers.forEach(uid => {
+            let st = studentStats[uid];
+            let dFirst = new Date(st.firstSub * 1000).toLocaleDateString();
+            let dLast = new Date(st.lastSub * 1000).toLocaleDateString();
             
+            let tr = document.createElement('tr');
             tr.innerHTML = `
-                <td>Alumno \${s.userid}</td>
-                <td>Asignatura \${s.course}</td>
-                <td>\${s.groupid == '0' ? '-' : s.groupid}</td>
-                <td>\${s.vpl_name}</td>
-                <td>\${s.nevaluations}</td>
-                <td class=\"\${gradeClass}\">\${s.grade.toFixed(2)}</td>
-                <td>\${dateStr}</td>
-                <td>\${riskBadge}</td>
+                <td>\${uid}</td>
+                <td>\${st.group}</td>
+                <td>\${st.subs}</td>
+                <td>\${st.maxGrade.toFixed(2)}</td>
+                <td>\${dFirst}</td>
+                <td>\${dLast}</td>
+                <td>\${st.runs}</td>
+                <td>\${st.evals}</td>
             `;
-            tableBody.appendChild(tr);
+            tbody.appendChild(tr);
         });
+    }
+
+    function renderChart(type, subs) {
+        if (currentChart) currentChart.destroy();
+        const ctx = document.getElementById('mainChart').getContext('2d');
+
+        if (subs.length === 0) {
+            currentChart = new Chart(ctx, { type: 'bar', data: { labels: ['Sin datos'], datasets: [{data:[0]}] }});
+            document.getElementById('zoomControls').style.display = 'none';
+            return;
+        }
 
         let zoomControls = document.getElementById('zoomControls');
         if (type === 'esfuerzo' || type === 'evolucion') {
@@ -306,201 +255,141 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         if (type === 'rendimiento') {
-            let gradesDist = { 'Suspenso (<5)': 0, 'Aprobado (5-6)': 0, 'Notable (7-8)': 0, 'Sobresaliente (9-10)': 0 };
-            
-            let userGrades = {};
-            filteredSubmissions.forEach(s => {
-                if(!userGrades[s.userid]) userGrades[s.userid] = {sum:0, count:0};
-                userGrades[s.userid].sum += s.grade;
-                userGrades[s.userid].count++;
-            });
-
-            Object.values(userGrades).forEach(ug => {
-                let grade = ug.sum / ug.count;
-                if (grade < 5) gradesDist['Suspenso (<5)']++;
-                else if (grade < 7) gradesDist['Aprobado (5-6)']++;
-                else if (grade < 9) gradesDist['Notable (7-8)']++;
-                else gradesDist['Sobresaliente (9-10)']++;
-            });
-
-            currentChart = new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    labels: Object.keys(gradesDist),
-                    datasets: [{
-                        data: Object.values(gradesDist),
-                        backgroundColor: ['#dc3545', '#ffc107', '#17a2b8', '#28a745'],
-                        borderWidth: 2
-                    }]
-                },
-                options: { 
-                    responsive: true, 
-                    plugins: { 
-                        title: { display: true, text: 'Distribución de Notas Medias', font: {size: 16, weight: 'normal'} }
-                    } 
-                }
-            });
-
-        } else if (type === 'esfuerzo') {
-            let scatterData = filteredSubmissions.map(s => ({
-                x: s.nevaluations, 
-                y: s.grade,
-                userid: s.userid,
-                vpl_name: s.vpl_name
-            }));
-
-            currentChart = new Chart(ctx, {
-                type: 'scatter',
-                data: {
-                    datasets: [{
-                        label: 'Evaluaciones vs Nota',
-                        data: scatterData,
-                        backgroundColor: 'rgba(13, 110, 253, 0.5)',
-                        pointRadius: 5,
-                        pointHoverRadius: 7
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: { 
-                        title: { display: true, text: 'Correlación de Esfuerzo (Evaluaciones) y Nota', font: {size: 16, weight: 'normal'} },
-                        zoom: zoomOptions,
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    let point = context.raw;
-                                    return `Alumno: \${point.userid} | Actividad: \${point.vpl_name} | Evaluaciones: \${point.x} | Nota: \${point.y.toFixed(2)}`;
-                                }
-                            }
-                        }
-                    },
-                    scales: {
-                        x: { title: { display: true, text: 'Nº Evaluaciones (Intentos de calificación)' } },
-                        y: { title: { display: true, text: 'Nota' }, min: 0, max: 10 }
-                    }
-                }
-            });
-
-        } else if (type === 'dificultad') {
-            let vplStats = {};
-            filteredSubmissions.forEach(s => {
-                if(!vplStats[s.vpl_name]) vplStats[s.vpl_name] = {sumGrade:0, sumEvals:0, count:0};
-                vplStats[s.vpl_name].sumGrade += s.grade;
-                vplStats[s.vpl_name].sumEvals += s.nevaluations;
-                vplStats[s.vpl_name].count++;
-            });
-            
-            let labels = Object.keys(vplStats).sort((a, b) => a.localeCompare(b, undefined, {numeric: true, sensitivity: 'base'}));
-            let data = labels.map(l => {
-                let st = vplStats[l];
-                let avgEvals = st.sumEvals / st.count;
-                let avgGrade = st.sumGrade / st.count;
-                return avgEvals / (avgGrade > 0 ? avgGrade : 1);
+            let ranges = {'0-2':0, '2-4':0, '4-5':0, '5-7':0, '7-9':0, '9-10':0};
+            subs.forEach(s => {
+                if(s.grade === null) return;
+                let g = s.grade;
+                if(g<2) ranges['0-2']++;
+                else if(g<4) ranges['2-4']++;
+                else if(g<5) ranges['4-5']++;
+                else if(g<7) ranges['5-7']++;
+                else if(g<9) ranges['7-9']++;
+                else ranges['9-10']++;
             });
 
             currentChart = new Chart(ctx, {
                 type: 'bar',
                 data: {
-                    labels: labels,
+                    labels: Object.keys(ranges),
                     datasets: [{
-                        label: 'Índice de Frustración (Evaluaciones)',
-                        data: data,
-                        backgroundColor: primaryColor,
-                        borderRadius: 4
+                        label: 'Nº de Entregas',
+                        data: Object.values(ranges),
+                        backgroundColor: primaryColor
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { title: { display: true, text: 'Distribución de Notas', font: {size: 16} } },
+                    scales: { y: { beginAtZero: true, title: {display:true, text:'Cantidad'} }, x: {title: {display:true, text:'Rango de Notas'}} }
+                }
+            });
+
+        } else if (type === 'esfuerzo') {
+            let scatterData = subs.map(s => ({
+                x: s.run_count, y: s.nevaluations, 
+                userid: s.userid, vpl_name: s.vpl_name
+            }));
+            
+            currentChart = new Chart(ctx, {
+                type: 'scatter',
+                data: {
+                    datasets: [{
+                        label: 'Ejecuciones vs Evals. Automáticas',
+                        data: scatterData,
+                        backgroundColor: 'rgba(0, 123, 255, 0.6)',
+                        pointRadius: 5
                     }]
                 },
                 options: {
                     responsive: true,
                     plugins: { 
-                        title: { display: true, text: 'Dificultad por Actividad (Índice de Frustración: Evaluaciones / Nota)', font: {size: 16, weight: 'normal'} },
-                        zoom: zoomOptions
+                        title: { display: true, text: 'Esfuerzo Técnico', font: {size: 16} },
+                        zoom: zoomOptions,
+                        tooltip: {
+                            callbacks: {
+                                label: function(ctx) { return `Alumno \${ctx.raw.userid}: \${ctx.raw.x} ejecuciones, \${ctx.raw.y} evaluaciones`; }
+                            }
+                        }
                     },
-                    scales: { 
-                        x: { grid: {display: false} }
+                    scales: {
+                        x: { title: { display: true, text: 'Nº de Ejecuciones' } },
+                        y: { title: { display: true, text: 'Nº de Evaluaciones' } }
                     }
-                }
-            });
-            
-        } else if (type === 'riesgo') {
-            let riskCounts = { 'Riesgo Alto': 0, 'Precaución': 0, 'Seguro': 0 };
-            Object.values(studentRiskMap).forEach(risk => {
-                if(riskCounts[risk.label] !== undefined) riskCounts[risk.label]++;
-            });
-
-            currentChart = new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    labels: Object.keys(riskCounts),
-                    datasets: [{
-                        data: Object.values(riskCounts),
-                        backgroundColor: ['#dc3545', '#ffc107', '#28a745'],
-                        borderWidth: 2
-                    }]
-                },
-                options: { 
-                    responsive: true, 
-                    plugins: { 
-                        title: { display: true, text: 'Detector de Riesgo', font: {size: 16, weight: 'normal'} }
-                    } 
                 }
             });
 
         } else if (type === 'evolucion') {
-            let sortedSubs = [...filteredSubmissions].sort((a,b) => a.datesubmitted - b.datesubmitted);
-            let timeData = sortedSubs.map(s => ({
-                x: new Date(s.datesubmitted * 1000), 
-                y: s.grade,
-                userid: s.userid,
-                groupid: s.groupid,
-                vpl_name: s.vpl_name
-            }));
+            let dateCounts = {};
+            subs.forEach(s => {
+                let d = new Date(s.datesubmitted * 1000).toISOString().split('T')[0];
+                dateCounts[d] = (dateCounts[d] || 0) + 1;
+            });
+            let sortedDates = Object.keys(dateCounts).sort();
+            let dataPoints = sortedDates.map(d => ({ x: d, y: dateCounts[d] }));
 
             currentChart = new Chart(ctx, {
                 type: 'line',
                 data: {
                     datasets: [{
-                        label: 'Evolución de Notas',
-                        data: timeData,
+                        label: 'Entregas por Día',
+                        data: dataPoints,
                         borderColor: primaryColor,
                         backgroundColor: 'rgba(0, 123, 255, 0.1)',
-                        borderWidth: 2,
-                        pointBackgroundColor: primaryColor,
-                        tension: 0.2,
-                        showLine: mode === 'alumno',
-                        fill: mode === 'alumno'
+                        fill: true, tension: 0.1
                     }]
                 },
                 options: {
                     responsive: true,
                     plugins: { 
-                        title: { display: true, text: 'Evolución Temporal de las Calificaciones', font: {size: 16, weight: 'normal'} },
-                        zoom: zoomOptions,
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    let point = context.raw;
-                                    let groupStr = point.groupid == '0' ? '-' : point.groupid;
-                                    return `Nota: \${point.y.toFixed(2)} | Actividad: \${point.vpl_name} | Alumno: \${point.userid} | Grupo: \${groupStr}`;
-                                }
-                            }
-                        }
+                        title: { display: true, text: 'Evolución de Entregas en el Tiempo', font: {size: 16} },
+                        zoom: zoomOptions
                     },
-                    scales: {
-                        x: { 
-                            type: 'time', 
-                            time: { unit: 'day' },
-                            title: { display: true, text: 'Fecha de Entrega' }
-                        },
-                        y: { title: { display: true, text: 'Nota' }, min: 0, max: 10 }
-                    }
+                    scales: { x: { type: 'time', time: {unit: 'day'} }, y: { beginAtZero: true, title: {display:true, text:'Entregas'} } }
+                }
+            });
+        } else if (type === 'dificultad') {
+            let vplStats = {};
+            subs.forEach(s => {
+                if (!vplStats[s.vpl]) {
+                    vplStats[s.vpl] = { name: s.vpl_name, sumGrade: 0, countGrade: 0 };
+                }
+                if (s.grade !== null) {
+                    vplStats[s.vpl].sumGrade += s.grade;
+                    vplStats[s.vpl].countGrade++;
+                }
+            });
+
+            let vplArray = Object.values(vplStats).map(st => ({
+                name: st.name,
+                avgGrade: st.countGrade > 0 ? parseFloat((st.sumGrade / st.countGrade).toFixed(2)) : 0
+            }));
+            
+            vplArray.sort((a, b) => a.avgGrade - b.avgGrade);
+
+            currentChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: vplArray.map(st => st.name),
+                    datasets: [{
+                        label: 'Nota Media (Menos = Más difícil)',
+                        data: vplArray.map(st => st.avgGrade),
+                        backgroundColor: primaryColor
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { 
+                        title: { display: true, text: 'Dificultad por Actividad', font: {size: 16} },
+                        zoom: zoomOptions
+                    },
+                    scales: { y: { beginAtZero: true, max: 10, title: {display:true, text:'Nota Media'} } }
                 }
             });
         }
     }
 
-    updateSpecificFilters();
+    updateDashboard();
 });
 </script>
 ";
-
 echo $OUTPUT->footer();
