@@ -52,31 +52,28 @@ echo '<div class="vpl-kpi-card"><div class="vpl-kpi-title">Alumnos Activos</div>
 echo '<div class="vpl-kpi-card"><div class="vpl-kpi-title">Alumnos Sin Actividad</div><div class="vpl-kpi-value danger" id="kpiInactiveUsers">--</div></div>';
 echo '</div>';
 
-echo '<div class="vpl-control-panel">';
+echo '<div class="vpl-control-panel" style="flex-direction:column; gap:15px;">';
 
-echo '<div class="vpl-control-group">';
-echo '<label>Tipo de Visualización</label>';
-echo '<select id="chartType">';
-echo '<option value="rendimiento">Distribución de Notas Finales</option>';
-echo '<option value="evolucion">Evolución de Entregas en el Tiempo</option>';
-echo '<option value="esfuerzo">Esfuerzo (Ejecuciones vs Evaluaciones)</option>';
-echo '<option value="dificultad">Dificultad por Actividad</option>';
-echo '</select>';
+echo '<div style="display:flex; width:100%; gap:20px; border-bottom:1px solid #dee2e6; padding-bottom:15px;">';
+echo '<div class="vpl-control-group"><label>Modo de Análisis</label><select id="analysisMode"><option value="global">Análisis Global</option><option value="compare_groups">Comparar Grupos</option><option value="compare_users">Comparar Alumnos</option></select></div>';
+echo '<div class="vpl-control-group"><label>Tipo de Visualización</label><select id="chartType"><option value="rendimiento">Distribución de Notas Finales</option><option value="evolucion">Evolución de Entregas en el Tiempo</option><option value="esfuerzo">Esfuerzo (Ejecuciones vs Evaluaciones)</option><option value="dificultad">Dificultad por Actividad</option></select></div>';
+echo '<div class="vpl-control-group"><label>Actividad VPL</label><select id="filterVpl"><option value="all">Todas las actividades</option></select></div>';
 echo '</div>';
 
-echo '<div class="vpl-control-group">';
-echo '<label>Filtrar por Grupo</label>';
-echo '<select id="filterGroup">';
-echo '<option value="all">Todos los grupos</option>';
-echo '</select>';
+echo '<div id="panelGlobal" style="display:flex; gap:20px; width:100%;">';
+echo '<div class="vpl-control-group"><label>Filtrar por Grupo</label><select id="filterGroup"><option value="all">Todos los grupos</option></select></div>';
 echo '</div>';
 
-echo '<div class="vpl-control-group">';
-echo '<label>Filtrar por Actividad VPL</label>';
-echo '<select id="filterVpl">';
-echo '<option value="all">Todas las actividades</option>';
-echo '</select>';
+echo '<div id="panelCompareGroups" style="display:none; gap:20px; width:100%;">';
+echo '<div class="vpl-control-group"><label>Grupo 1 (Azul)</label><select id="compareGroup1"></select></div>';
+echo '<div class="vpl-control-group"><label>Grupo 2 (Verde)</label><select id="compareGroup2"></select></div>';
 echo '</div>';
+
+echo '<div id="panelCompareUsers" style="display:none; gap:20px; width:100%;">';
+echo '<div class="vpl-control-group"><label>Alumno 1 (Azul)</label><select id="compareUser1"></select></div>';
+echo '<div class="vpl-control-group"><label>Alumno 2 (Verde)</label><select id="compareUser2"></select></div>';
+echo '</div>';
+
 echo '</div>';
 
 echo '<div class="vpl-canvas-container" style="position:relative;">';
@@ -90,7 +87,7 @@ echo '</div>';
 
 echo '<div class="vpl-table-container">';
 echo '<table class="vpl-table">';
-echo '<thead><tr><th>Alumno (ID)</th><th>Grupo</th><th>Entregas</th><th>Nota Máx.</th><th>Primera Entrega</th><th>Última Entrega</th><th>Ejecuciones</th><th>Evals. Auto.</th></tr></thead>';
+echo '<thead><tr><th>Alumno (ID)</th><th>Grupo</th><th>Entregas</th><th>Nota Final</th><th>Primera Entrega</th><th>Última Entrega</th><th>Ejecuciones</th><th>Evals. Auto.</th></tr></thead>';
 echo '<tbody id="dataTableBody"></tbody>';
 echo '</table>';
 echo '</div>';
@@ -103,10 +100,21 @@ document.addEventListener('DOMContentLoaded', function() {
     const rawData = {$dashboard_json};
     let currentChart = null;
     const primaryColor = '#007bff';
+    const secondaryColor = '#9bca3e';
 
+    const analysisModeEl = document.getElementById('analysisMode');
     const chartTypeEl = document.getElementById('chartType');
     const filterGroupEl = document.getElementById('filterGroup');
     const filterVplEl = document.getElementById('filterVpl');
+    
+    const panelGlobal = document.getElementById('panelGlobal');
+    const panelCompareGroups = document.getElementById('panelCompareGroups');
+    const panelCompareUsers = document.getElementById('panelCompareUsers');
+
+    const compareGroup1El = document.getElementById('compareGroup1');
+    const compareGroup2El = document.getElementById('compareGroup2');
+    const compareUser1El = document.getElementById('compareUser1');
+    const compareUser2El = document.getElementById('compareUser2');
     
     const zoomOptions = {
         pan: { enabled: true, mode: 'xy' },
@@ -124,159 +132,342 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     let groupMap = {};
+    let groupCountMap = {};
     rawData.groups.forEach(g => {
         groupMap[g.id] = g.name;
-        let opt = document.createElement('option');
-        opt.value = g.id; opt.innerText = g.name;
-        filterGroupEl.appendChild(opt);
+        groupCountMap[g.id] = g.member_count;
+        
+        let opt1 = document.createElement('option'); opt1.value = g.id; opt1.innerText = g.name;
+        filterGroupEl.appendChild(opt1);
+        
+        let opt2 = document.createElement('option'); opt2.value = g.id; opt2.innerText = g.name;
+        compareGroup1El.appendChild(opt2);
+        
+        let opt3 = document.createElement('option'); opt3.value = g.id; opt3.innerText = g.name;
+        compareGroup2El.appendChild(opt3);
     });
     
-    let uniqueVpls = {};
-    rawData.submissions.forEach(s => { uniqueVpls[s.vpl] = s.vpl_name; });
-    Object.keys(uniqueVpls).forEach(vplId => {
-        let opt = document.createElement('option');
-        opt.value = vplId; opt.innerText = uniqueVpls[vplId];
-        filterVplEl.appendChild(opt);
+    rawData.users.forEach(uid => {
+        let opt1 = document.createElement('option'); opt1.value = uid; opt1.innerText = 'Alumno ' + uid;
+        compareUser1El.appendChild(opt1);
+        let opt2 = document.createElement('option'); opt2.value = uid; opt2.innerText = 'Alumno ' + uid;
+        compareUser2El.appendChild(opt2);
     });
 
-    chartTypeEl.addEventListener('change', updateDashboard);
-    filterGroupEl.addEventListener('change', updateDashboard);
-    filterVplEl.addEventListener('change', updateDashboard);
-
-    function updateDashboard() {
-        const type = chartTypeEl.value;
-        const groupId = filterGroupEl.value;
-        const vplId = filterVplEl.value;
-
-        let filtered = rawData.submissions;
-        if (groupId !== 'all') {
-            const gid = parseInt(groupId);
-            filtered = filtered.filter(s => s.user_groups && s.user_groups.includes(gid));
-        }
-        if (vplId !== 'all') filtered = filtered.filter(s => s.vpl == vplId);
-
-        updateKPIs(filtered);
-        updateTable(filtered);
-        renderChart(type, filtered);
+    if (rawData.vpls) {
+        rawData.vpls.forEach(v => {
+            let opt = document.createElement('option');
+            opt.value = v.id; opt.innerText = v.name;
+            filterVplEl.appendChild(opt);
+        });
+    } else {
+        let uniqueVpls = {};
+        rawData.submissions.forEach(s => { uniqueVpls[s.vpl] = s.vpl_name; });
+        Object.keys(uniqueVpls).forEach(vplId => {
+            let opt = document.createElement('option');
+            opt.value = vplId; opt.innerText = uniqueVpls[vplId];
+            filterVplEl.appendChild(opt);
+        });
     }
 
-    function updateKPIs(subs) {
+    analysisModeEl.addEventListener('change', () => {
+        panelGlobal.style.display = 'none';
+        panelCompareGroups.style.display = 'none';
+        panelCompareUsers.style.display = 'none';
+        
+        const diffOption = Array.from(chartTypeEl.options).find(opt => opt.value === 'dificultad');
+        
+        if (analysisModeEl.value === 'global') {
+            panelGlobal.style.display = 'flex';
+            if (diffOption) {
+                diffOption.disabled = false;
+                diffOption.style.display = '';
+            }
+        } else {
+            if (analysisModeEl.value === 'compare_groups') panelCompareGroups.style.display = 'flex';
+            else if (analysisModeEl.value === 'compare_users') panelCompareUsers.style.display = 'flex';
+            
+            if (diffOption) {
+                diffOption.disabled = true;
+                diffOption.style.display = 'none';
+                if (chartTypeEl.value === 'dificultad') {
+                    chartTypeEl.value = 'rendimiento';
+                }
+            }
+        }
+        updateDashboard();
+    });
+
+    [chartTypeEl, filterGroupEl, filterVplEl, compareGroup1El, compareGroup2El, compareUser1El, compareUser2El].forEach(el => el.addEventListener('change', updateDashboard));
+
+    function updateDashboard() {
+        const mode = analysisModeEl.value;
+        const type = chartTypeEl.value;
+        const vplId = filterVplEl.value;
+
+        let baseFiltered = rawData.submissions;
+        if (vplId !== 'all') baseFiltered = baseFiltered.filter(s => s.vpl == vplId);
+
+        let datasetsInfo = [];
+
+        if (mode === 'global') {
+            const groupId = filterGroupEl.value;
+            let finalData = baseFiltered;
+            let currentTotalStudents = rawData.total_students;
+            
+            if (groupId !== 'all') {
+                const gid = parseInt(groupId);
+                finalData = finalData.filter(s => s.user_groups && s.user_groups.includes(gid));
+                currentTotalStudents = groupCountMap[gid] || 0;
+            }
+            datasetsInfo.push({ label: 'Global', data: finalData, color: primaryColor });
+            updateKPIs(finalData, currentTotalStudents);
+            let groupFilter = groupId !== 'all' ? [parseInt(groupId)] : null;
+            updateTable(finalData, groupFilter, null);
+        } else if (mode === 'compare_groups') {
+            const gid1 = parseInt(compareGroup1El.value);
+            const gid2 = parseInt(compareGroup2El.value);
+            let d1 = baseFiltered.filter(s => s.user_groups && s.user_groups.includes(gid1));
+            let d2 = baseFiltered.filter(s => s.user_groups && s.user_groups.includes(gid2));
+            datasetsInfo.push({ label: groupMap[gid1] || 'Grupo ' + gid1, data: d1, color: primaryColor });
+            datasetsInfo.push({ label: groupMap[gid2] || 'Grupo ' + gid2, data: d2, color: secondaryColor });
+            
+            let combinedMap = new Map();
+            [...d1, ...d2].forEach(s => combinedMap.set(s.id, s));
+            let combined = Array.from(combinedMap.values());
+            
+            let allowedUsers = new Set();
+            if (rawData.users && rawData.user_groups_map) {
+                rawData.users.forEach(uid => {
+                    let uGroups = rawData.user_groups_map[uid] || [0];
+                    if (uGroups.includes(gid1) || uGroups.includes(gid2)) {
+                        allowedUsers.add(uid);
+                    }
+                });
+            }
+            let combinedTotal = allowedUsers.size > 0 ? allowedUsers.size : (groupCountMap[gid1] || 0) + (groupCountMap[gid2] || 0);
+            
+            updateKPIs(combined, combinedTotal);
+            updateTable(combined, [gid1, gid2], null);
+        } else if (mode === 'compare_users') {
+            const uid1 = parseInt(compareUser1El.value);
+            const uid2 = parseInt(compareUser2El.value);
+            let d1 = baseFiltered.filter(s => s.userid === uid1);
+            let d2 = baseFiltered.filter(s => s.userid === uid2);
+            datasetsInfo.push({ label: 'Alumno ' + uid1, data: d1, color: primaryColor });
+            datasetsInfo.push({ label: 'Alumno ' + uid2, data: d2, color: secondaryColor });
+            
+            let combinedMap = new Map();
+            [...d1, ...d2].forEach(s => combinedMap.set(s.id, s));
+            let combined = Array.from(combinedMap.values());
+            
+            let combinedTotal = uid1 === uid2 ? 1 : 2;
+            updateKPIs(combined, combinedTotal);
+            updateTable(combined, null, [uid1, uid2]);
+        }
+
+        renderChart(type, datasetsInfo);
+    }
+
+    function updateKPIs(subs, totalStudentsFallback) {
+        let totalAllowed = totalStudentsFallback !== undefined ? totalStudentsFallback : (rawData.total_students || 0);
+        
         if (subs.length === 0) {
             document.getElementById('kpiAvgGrade').innerText = '0.00';
             document.getElementById('kpiTotalSubs').innerText = '0';
             document.getElementById('kpiActiveUsers').innerText = '0';
-            document.getElementById('kpiInactiveUsers').innerText = rawData.total_students || 0;
+            document.getElementById('kpiInactiveUsers').innerText = totalAllowed;
             return;
         }
 
-        let sumGrades = 0, countGrades = 0;
         let activeUsers = new Set();
+        let finalGrades = {};
+        
         subs.forEach(s => {
-            if (s.grade !== null) { sumGrades += s.grade; countGrades++; }
             activeUsers.add(s.userid);
+            if (s.grade !== null) {
+                let key = s.userid + '_' + s.vpl;
+                if (finalGrades[key] === undefined || s.datesubmitted > finalGrades[key].date) {
+                    finalGrades[key] = { grade: s.grade, date: s.datesubmitted };
+                }
+            }
+        });
+
+        let sumGrades = 0;
+        let countGrades = 0;
+        Object.values(finalGrades).forEach(g => {
+            sumGrades += g.grade;
+            countGrades++;
         });
 
         const avgGrade = countGrades > 0 ? (sumGrades / countGrades).toFixed(2) : '0.00';
         const totalSubs = subs.length;
         const activeCount = activeUsers.size;
-        const inactiveCount = Math.max(0, (rawData.total_students || 0) - activeCount);
+        const inactiveCount = Math.max(0, totalAllowed - activeCount);
 
         document.getElementById('kpiAvgGrade').innerText = avgGrade;
         document.getElementById('kpiTotalSubs').innerText = totalSubs;
-        document.getElementById('kpiActiveUsers').innerText = activeCount + (rawData.total_students ? ' / ' + rawData.total_students : '');
+        document.getElementById('kpiActiveUsers').innerText = activeCount + (totalAllowed ? ' / ' + totalAllowed : '');
         document.getElementById('kpiInactiveUsers').innerText = inactiveCount;
     }
 
-    function updateTable(subs) {
+    function updateTable(subs, allowedGroupIds = null, allowedUserIds = null) {
         const tbody = document.getElementById('dataTableBody');
         tbody.innerHTML = '';
-        if (subs.length === 0) {
-            tbody.innerHTML = '<tr><td colspan=\"8\" style=\"text-align:center\">No hay datos para los filtros seleccionados.</td></tr>';
-            return;
-        }
 
         let studentStats = {};
         subs.forEach(s => {
-            if(!studentStats[s.userid]) {
+            if (!studentStats[s.userid]) {
                 let gNames = (s.user_groups || []).map(gid => groupMap[gid] || gid).join(', ');
                 if (!gNames) gNames = 'Sin Grupo';
                 
                 studentStats[s.userid] = {
-                    group: gNames, subs: 0, maxGrade: 0, 
+                    group: gNames, subs: 0, finalGrade: null, lastGradeDate: 0,
                     firstSub: s.datesubmitted, lastSub: s.datesubmitted,
-                    runs: 0, evals: 0
+                    vplMaxEffort: {}
                 };
             }
             let st = studentStats[s.userid];
             st.subs++;
-            if(s.grade !== null && s.grade > st.maxGrade) st.maxGrade = s.grade;
-            if(s.datesubmitted < st.firstSub) st.firstSub = s.datesubmitted;
-            if(s.datesubmitted > st.lastSub) st.lastSub = s.datesubmitted;
-            st.runs += s.run_count;
-            st.evals += s.nevaluations;
+            if (s.grade !== null) {
+                if (st.finalGrade === null || s.datesubmitted > st.lastGradeDate) {
+                    st.finalGrade = s.grade;
+                    st.lastGradeDate = s.datesubmitted;
+                }
+            }
+            if (s.datesubmitted < st.firstSub) st.firstSub = s.datesubmitted;
+            if (s.datesubmitted > st.lastSub) st.lastSub = s.datesubmitted;
+            
+            if (!st.vplMaxEffort[s.vpl]) {
+                st.vplMaxEffort[s.vpl] = { runs: 0, evals: 0 };
+            }
+            if (s.run_count > st.vplMaxEffort[s.vpl].runs) st.vplMaxEffort[s.vpl].runs = s.run_count;
+            if (s.nevaluations > st.vplMaxEffort[s.vpl].evals) st.vplMaxEffort[s.vpl].evals = s.nevaluations;
         });
 
+        if (rawData.users && rawData.user_groups_map) {
+            rawData.users.forEach(uid => {
+                if (allowedUserIds !== null) {
+                    if (!allowedUserIds.includes(uid)) return;
+                } else {
+                    let uGroups = rawData.user_groups_map[uid] || [];
+                    if (uGroups.length === 0) uGroups = [0];
+                    if (allowedGroupIds !== null) {
+                        let hasMatch = allowedGroupIds.some(gid => uGroups.includes(gid));
+                        if (!hasMatch) return;
+                    }
+                }
+
+                if (!studentStats[uid]) {
+                    let uGroups = rawData.user_groups_map[uid] || [];
+                    if (uGroups.length === 0) uGroups = [0];
+                    let gNames = uGroups.map(gid => groupMap[gid] || gid).join(', ');
+                    if (!gNames || gNames === '0') gNames = 'Sin Grupo';
+
+                    studentStats[uid] = {
+                        group: gNames, subs: 0, finalGrade: null, lastGradeDate: 0,
+                        firstSub: null, lastSub: null,
+                        runs: 0, evals: 0
+                    };
+                }
+            });
+        }
+
         let sortedUsers = Object.keys(studentStats).sort((a,b) => a - b);
+        if (sortedUsers.length === 0) {
+            tbody.innerHTML = '<tr><td colspan=\"8\" style=\"text-align:center\">No hay alumnos en esta selección.</td></tr>';
+            return;
+        }
+
         sortedUsers.forEach(uid => {
             let st = studentStats[uid];
-            let dFirst = new Date(st.firstSub * 1000).toLocaleDateString();
-            let dLast = new Date(st.lastSub * 1000).toLocaleDateString();
+            let dFirst = st.firstSub ? new Date(st.firstSub * 1000).toLocaleDateString() : '--';
+            let dLast = st.lastSub ? new Date(st.lastSub * 1000).toLocaleDateString() : '--';
+            let gradeStr = st.finalGrade !== null ? st.finalGrade.toFixed(2) : '--';
+            
+            let totalRuns = 0;
+            let totalEvals = 0;
+            if (st.vplMaxEffort) {
+                Object.values(st.vplMaxEffort).forEach(v => {
+                    totalRuns += v.runs;
+                    totalEvals += v.evals;
+                });
+            }
             
             let tr = document.createElement('tr');
             tr.innerHTML = `
                 <td>\${uid}</td>
                 <td>\${st.group}</td>
                 <td>\${st.subs}</td>
-                <td>\${st.maxGrade.toFixed(2)}</td>
+                <td>\${gradeStr}</td>
                 <td>\${dFirst}</td>
                 <td>\${dLast}</td>
-                <td>\${st.runs}</td>
-                <td>\${st.evals}</td>
+                <td>\${totalRuns}</td>
+                <td>\${totalEvals}</td>
             `;
             tbody.appendChild(tr);
         });
     }
 
-    function renderChart(type, subs) {
+    function renderChart(type, datasetsInfo) {
         if (currentChart) currentChart.destroy();
         const ctx = document.getElementById('mainChart').getContext('2d');
 
-        if (subs.length === 0) {
+        let totalSubs = datasetsInfo.reduce((acc, ds) => acc + ds.data.length, 0);
+        if (totalSubs === 0) {
             currentChart = new Chart(ctx, { type: 'bar', data: { labels: ['Sin datos'], datasets: [{data:[0]}] }});
             document.getElementById('zoomControls').style.display = 'none';
             return;
         }
 
         let zoomControls = document.getElementById('zoomControls');
-        if (type === 'esfuerzo' || type === 'evolucion') {
-            zoomControls.style.display = 'flex';
-        } else {
-            zoomControls.style.display = 'none';
-        }
+        if (type === 'esfuerzo' || type === 'evolucion') zoomControls.style.display = 'flex';
+        else zoomControls.style.display = 'none';
+
+        let chartDatasets = [];
+        let commonLabels = [];
 
         if (type === 'rendimiento') {
-            let ranges = {'0-2':0, '2-4':0, '4-5':0, '5-7':0, '7-9':0, '9-10':0};
-            subs.forEach(s => {
-                if(s.grade === null) return;
-                let g = s.grade;
-                if(g<2) ranges['0-2']++;
-                else if(g<4) ranges['2-4']++;
-                else if(g<5) ranges['4-5']++;
-                else if(g<7) ranges['5-7']++;
-                else if(g<9) ranges['7-9']++;
-                else ranges['9-10']++;
+            let rangesList = datasetsInfo.map(ds => {
+                let ranges = {'0-2':0, '2-4':0, '4-5':0, '5-7':0, '7-9':0, '9-10':0};
+                
+                let finalGrades = {};
+                ds.data.forEach(s => {
+                    if (s.grade === null) return;
+                    let key = s.userid + '_' + s.vpl;
+                    if (finalGrades[key] === undefined || s.datesubmitted > finalGrades[key].date) {
+                        finalGrades[key] = { grade: s.grade, date: s.datesubmitted };
+                    }
+                });
+
+                Object.values(finalGrades).forEach(g => {
+                    let grade = g.grade;
+                    if (grade < 2) {
+                        ranges['0-2']++;
+                    } else if (g < 4) {
+                        ranges['2-4']++;
+                    } else if (g < 5) {
+                        ranges['4-5']++;
+                    } else if (g < 7) {
+                        ranges['5-7']++;
+                    } else if (g < 9) {
+                        ranges['7-9']++;
+                    } else {
+                        ranges['9-10']++;
+                    }
+                });
+                return ranges;
             });
+            commonLabels = Object.keys(rangesList[0]);
+            chartDatasets = datasetsInfo.map((ds, i) => ({
+                label: 'Nº Entregas (' + ds.label + ')',
+                data: Object.values(rangesList[i]),
+                backgroundColor: ds.color
+            }));
 
             currentChart = new Chart(ctx, {
                 type: 'bar',
-                data: {
-                    labels: Object.keys(ranges),
-                    datasets: [{
-                        label: 'Nº de Entregas',
-                        data: Object.values(ranges),
-                        backgroundColor: primaryColor
-                    }]
-                },
+                data: { labels: commonLabels, datasets: chartDatasets },
                 options: {
                     responsive: true,
                     plugins: { title: { display: true, text: 'Distribución de Notas', font: {size: 16} } },
@@ -285,103 +476,144 @@ document.addEventListener('DOMContentLoaded', function() {
             });
 
         } else if (type === 'esfuerzo') {
-            let scatterData = subs.map(s => ({
-                x: s.run_count, y: s.nevaluations, 
-                userid: s.userid, vpl_name: s.vpl_name
-            }));
+            chartDatasets = datasetsInfo.map(ds => {
+                let userEffort = {};
+                ds.data.forEach(s => {
+                    if (!userEffort[s.userid]) {
+                        userEffort[s.userid] = { vplMaxEffort: {} };
+                    }
+                    if (!userEffort[s.userid].vplMaxEffort[s.vpl]) {
+                        userEffort[s.userid].vplMaxEffort[s.vpl] = { runs: 0, evals: 0 };
+                    }
+                    if (s.run_count > userEffort[s.userid].vplMaxEffort[s.vpl].runs) {
+                        userEffort[s.userid].vplMaxEffort[s.vpl].runs = s.run_count;
+                    }
+                    if (s.nevaluations > userEffort[s.userid].vplMaxEffort[s.vpl].evals) {
+                        userEffort[s.userid].vplMaxEffort[s.vpl].evals = s.nevaluations;
+                    }
+                });
+                
+                let scatterData = Object.keys(userEffort).map(uid => {
+                    let totalR = 0, totalE = 0;
+                    Object.values(userEffort[uid].vplMaxEffort).forEach(v => {
+                        totalR += v.runs;
+                        totalE += v.evals;
+                    });
+                    return { x: totalR, y: totalE, userid: uid };
+                });
+
+                return {
+                    label: ds.label,
+                    data: scatterData,
+                    backgroundColor: ds.color + '99',
+                    pointRadius: 5
+                };
+            });
             
             currentChart = new Chart(ctx, {
                 type: 'scatter',
-                data: {
-                    datasets: [{
-                        label: 'Ejecuciones vs Evals. Automáticas',
-                        data: scatterData,
-                        backgroundColor: 'rgba(0, 123, 255, 0.6)',
-                        pointRadius: 5
-                    }]
-                },
+                data: { datasets: chartDatasets },
                 options: {
                     responsive: true,
                     plugins: { 
                         title: { display: true, text: 'Esfuerzo Técnico', font: {size: 16} },
                         zoom: zoomOptions,
-                        tooltip: {
-                            callbacks: {
-                                label: function(ctx) { return `Alumno \${ctx.raw.userid}: \${ctx.raw.x} ejecuciones, \${ctx.raw.y} evaluaciones`; }
-                            }
-                        }
+                        tooltip: { callbacks: { label: function(ctx) { return `Alumno \${ctx.raw.userid}: \${ctx.raw.x} ejec., \${ctx.raw.y} evals.`; } } }
                     },
-                    scales: {
-                        x: { title: { display: true, text: 'Nº de Ejecuciones' } },
-                        y: { title: { display: true, text: 'Nº de Evaluaciones' } }
-                    }
+                    scales: { x: { title: { display: true, text: 'Nº de Ejecuciones' } }, y: { title: { display: true, text: 'Nº de Evaluaciones' } } }
                 }
             });
 
         } else if (type === 'evolucion') {
-            let dateCounts = {};
-            subs.forEach(s => {
-                let d = new Date(s.datesubmitted * 1000).toISOString().split('T')[0];
-                dateCounts[d] = (dateCounts[d] || 0) + 1;
+            let dateSets = datasetsInfo.map(ds => {
+                let dateCounts = {};
+                ds.data.forEach(s => {
+                    let jsDate = new Date(s.datesubmitted * 1000);
+                    let d = jsDate.getFullYear() + '-' + 
+                            String(jsDate.getMonth() + 1).padStart(2, '0') + '-' + 
+                            String(jsDate.getDate()).padStart(2, '0');
+                    dateCounts[d] = (dateCounts[d] || 0) + 1;
+                });
+                return dateCounts;
             });
-            let sortedDates = Object.keys(dateCounts).sort();
-            let dataPoints = sortedDates.map(d => ({ x: d, y: dateCounts[d] }));
+            
+            let allDates = new Set();
+            dateSets.forEach(dc => Object.keys(dc).forEach(d => allDates.add(d)));
+            commonLabels = Array.from(allDates).sort();
+
+            chartDatasets = datasetsInfo.map((ds, i) => {
+                let dataPoints = commonLabels.map(d => ({ x: d, y: dateSets[i][d] || 0 }));
+                return {
+                    label: ds.label,
+                    data: dataPoints,
+                    borderColor: ds.color,
+                    backgroundColor: ds.color + '33',
+                    fill: true, tension: 0.1
+                };
+            });
 
             currentChart = new Chart(ctx, {
                 type: 'line',
-                data: {
-                    datasets: [{
-                        label: 'Entregas por Día',
-                        data: dataPoints,
-                        borderColor: primaryColor,
-                        backgroundColor: 'rgba(0, 123, 255, 0.1)',
-                        fill: true, tension: 0.1
-                    }]
-                },
+                data: { datasets: chartDatasets },
                 options: {
                     responsive: true,
-                    plugins: { 
-                        title: { display: true, text: 'Evolución de Entregas en el Tiempo', font: {size: 16} },
-                        zoom: zoomOptions
-                    },
+                    plugins: { title: { display: true, text: 'Evolución de Entregas en el Tiempo', font: {size: 16} }, zoom: zoomOptions },
                     scales: { x: { type: 'time', time: {unit: 'day'} }, y: { beginAtZero: true, title: {display:true, text:'Entregas'} } }
                 }
             });
+
         } else if (type === 'dificultad') {
-            let vplStats = {};
-            subs.forEach(s => {
-                if (!vplStats[s.vpl]) {
-                    vplStats[s.vpl] = { name: s.vpl_name, sumGrade: 0, countGrade: 0 };
-                }
-                if (s.grade !== null) {
-                    vplStats[s.vpl].sumGrade += s.grade;
-                    vplStats[s.vpl].countGrade++;
-                }
+            let vplSets = datasetsInfo.map(ds => {
+                let finalGrades = {};
+                let vplNames = {};
+                
+                ds.data.forEach(s => {
+                    if (s.grade === null) return;
+                    vplNames[s.vpl] = s.vpl_name;
+                    let key = s.userid + '_' + s.vpl;
+                    if (finalGrades[key] === undefined || s.datesubmitted > finalGrades[key].date) {
+                        finalGrades[key] = { vpl: s.vpl, grade: s.grade, date: s.datesubmitted };
+                    }
+                });
+
+                let vplStats = {};
+                Object.values(finalGrades).forEach(fg => {
+                    if (!vplStats[fg.vpl]) vplStats[fg.vpl] = { name: vplNames[fg.vpl], sumGrade: 0, countGrade: 0 };
+                    vplStats[fg.vpl].sumGrade += fg.grade;
+                    vplStats[fg.vpl].countGrade++;
+                });
+                return vplStats;
             });
 
-            let vplArray = Object.values(vplStats).map(st => ({
-                name: st.name,
-                avgGrade: st.countGrade > 0 ? parseFloat((st.sumGrade / st.countGrade).toFixed(2)) : 0
-            }));
+            let allVplsMap = {};
+            vplSets.forEach(vs => Object.keys(vs).forEach(vid => allVplsMap[vid] = vs[vid].name));
             
-            vplArray.sort((a, b) => a.avgGrade - b.avgGrade);
+            let vplArray = Object.keys(allVplsMap).map(vid => {
+                let sum = 0, count = 0;
+                vplSets.forEach(vs => { if (vs[vid]) { sum += vs[vid].sumGrade; count += vs[vid].countGrade; } });
+                return { id: vid, name: allVplsMap[vid], avgSort: count > 0 ? (sum/count) : 0 };
+            });
+            vplArray.sort((a,b) => a.avgSort - b.avgSort);
+            commonLabels = vplArray.map(v => v.name);
+
+            chartDatasets = datasetsInfo.map((ds, i) => {
+                let dataArray = vplArray.map(v => {
+                    let st = vplSets[i][v.id];
+                    return st && st.countGrade > 0 ? parseFloat((st.sumGrade / st.countGrade).toFixed(2)) : 0;
+                });
+                return {
+                    label: 'Nota Media (' + ds.label + ')',
+                    data: dataArray,
+                    backgroundColor: ds.color
+                };
+            });
 
             currentChart = new Chart(ctx, {
                 type: 'bar',
-                data: {
-                    labels: vplArray.map(st => st.name),
-                    datasets: [{
-                        label: 'Nota Media (Menos = Más difícil)',
-                        data: vplArray.map(st => st.avgGrade),
-                        backgroundColor: primaryColor
-                    }]
-                },
+                data: { labels: commonLabels, datasets: chartDatasets },
                 options: {
                     responsive: true,
-                    plugins: { 
-                        title: { display: true, text: 'Dificultad por Actividad', font: {size: 16} },
-                        zoom: zoomOptions
-                    },
+                    plugins: { title: { display: true, text: 'Dificultad por Actividad', font: {size: 16} }, zoom: zoomOptions },
                     scales: { y: { beginAtZero: true, max: 10, title: {display:true, text:'Nota Media'} } }
                 }
             });
