@@ -35,10 +35,10 @@ echo '<style>
     .vpl-control-group select { padding: 8px; border-radius: 4px; border: 1px solid #ced4da; background: #ffffff; color: #212529; }
     .vpl-canvas-container { background: #ffffff; border: 1px solid #dee2e6; border-radius: 8px; padding: 30px; height: 500px; display: flex; justify-content: center; align-items: center; }
     canvas { max-width: 100%; max-height: 100%; }
-    .vpl-table-container { margin-top: 20px; background: #ffffff; border: 1px solid #dee2e6; border-radius: 8px; padding: 20px; max-height: 500px; overflow-y: auto; }
+    .vpl-table-container { margin-top: 20px; background: #ffffff; border: 1px solid #dee2e6; border-radius: 8px; padding: 0; max-height: 500px; overflow-y: auto; }
     .vpl-table { width: 100%; border-collapse: collapse; color: #212529; font-size: 0.9em; }
-    .vpl-table th { background: #f8f9fa; padding: 12px; text-align: left; font-weight: bold; border-bottom: 2px solid #dee2e6; position: sticky; top: 0; }
-    .vpl-table td { padding: 10px 12px; border-bottom: 1px solid #e9ecef; }
+    .vpl-table th { background: #f8f9fa; padding: 15px 20px; text-align: left; font-weight: bold; border-bottom: 2px solid #dee2e6; position: sticky; top: 0; z-index: 10; }
+    .vpl-table td { padding: 12px 20px; border-bottom: 1px solid #e9ecef; }
     .vpl-table tbody tr:hover { background: #f1f3f5; }
     .badge { padding: 4px 8px; border-radius: 12px; color: white; font-size: 0.85em; font-weight: bold; }
 </style>';
@@ -85,7 +85,11 @@ echo '</div>';
 echo '<canvas id="mainChart"></canvas>';
 echo '</div>';
 
-echo '<div class="vpl-table-container">';
+echo '<div id="tableScrollIndicator" style="text-align: right; font-size: 0.85em; color: #6c757d; margin-bottom: 5px; margin-top: 20px; display: none;">';
+echo '<i>↓ Desliza hacia abajo dentro de la tabla para ver más alumnos</i>';
+echo '</div>';
+
+echo '<div class="vpl-table-container" id="mainTableContainer" style="display: none; margin-top: 5px;">';
 echo '<table class="vpl-table">';
 echo '<thead><tr><th>Alumno (ID)</th><th>Grupo</th><th>Entregas</th><th>Nota Final</th><th>Primera Entrega</th><th>Última Entrega</th><th>Ejecuciones</th><th>Evals. Auto.</th></tr></thead>';
 echo '<tbody id="dataTableBody"></tbody>';
@@ -222,8 +226,16 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             datasetsInfo.push({ label: 'Global', data: finalData, color: primaryColor });
             updateKPIs(finalData, currentTotalStudents);
-            let groupFilter = groupId !== 'all' ? [parseInt(groupId)] : null;
-            updateTable(finalData, groupFilter, null);
+            
+            if (groupId === 'all') {
+                document.getElementById('mainTableContainer').style.display = 'none';
+                document.getElementById('tableScrollIndicator').style.display = 'none';
+            } else {
+                document.getElementById('mainTableContainer').style.display = 'block';
+                document.getElementById('tableScrollIndicator').style.display = 'block';
+                updateTable(finalData, [parseInt(groupId)], null);
+            }
+            
         } else if (mode === 'compare_groups') {
             const gid1 = parseInt(compareGroup1El.value);
             const gid2 = parseInt(compareGroup2El.value);
@@ -248,6 +260,9 @@ document.addEventListener('DOMContentLoaded', function() {
             let combinedTotal = allowedUsers.size > 0 ? allowedUsers.size : (groupCountMap[gid1] || 0) + (groupCountMap[gid2] || 0);
             
             updateKPIs(combined, combinedTotal);
+            
+            document.getElementById('mainTableContainer').style.display = 'block';
+            document.getElementById('tableScrollIndicator').style.display = 'block';
             updateTable(combined, [gid1, gid2], null);
         } else if (mode === 'compare_users') {
             const uid1 = parseInt(compareUser1El.value);
@@ -263,6 +278,9 @@ document.addEventListener('DOMContentLoaded', function() {
             
             let combinedTotal = uid1 === uid2 ? 1 : 2;
             updateKPIs(combined, combinedTotal);
+            
+            document.getElementById('mainTableContainer').style.display = 'block';
+            document.getElementById('tableScrollIndicator').style.display = 'block';
             updateTable(combined, null, [uid1, uid2]);
         }
 
