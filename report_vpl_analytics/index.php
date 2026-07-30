@@ -91,7 +91,7 @@ echo '</div>';
 
 echo '<div class="vpl-table-container" id="mainTableContainer" style="display: none; margin-top: 5px;">';
 echo '<table class="vpl-table">';
-echo '<thead><tr><th>Alumno (ID)</th><th>Grupo</th><th>Entregas</th><th>Nota Final</th><th>Primera Entrega</th><th>Última Entrega</th><th>Ejecuciones</th><th>Evals. Auto.</th></tr></thead>';
+echo '<thead><tr><th>Alumno (ID)</th><th>Grupo</th><th>Entregas</th><th>Nota Final</th><th>Primera Entrega</th><th>Última Entrega</th><th>Ejecuciones</th><th>Depuraciones</th><th>Evals. Auto.</th></tr></thead>';
 echo '<tbody id="dataTableBody"></tbody>';
 echo '</table>';
 echo '</div>';
@@ -376,10 +376,11 @@ document.addEventListener('DOMContentLoaded', function() {
             if (s.datesubmitted > st.lastSub) st.lastSub = s.datesubmitted;
             
             if (!st.vplMaxEffort[s.vpl]) {
-                st.vplMaxEffort[s.vpl] = { runs: 0, evals: 0 };
+                st.vplMaxEffort[s.vpl] = { runs: 0, evals: 0, debugs: 0 };
             }
             if (s.run_count > st.vplMaxEffort[s.vpl].runs) st.vplMaxEffort[s.vpl].runs = s.run_count;
             if (s.nevaluations > st.vplMaxEffort[s.vpl].evals) st.vplMaxEffort[s.vpl].evals = s.nevaluations;
+            if (s.debug_count && s.debug_count > st.vplMaxEffort[s.vpl].debugs) st.vplMaxEffort[s.vpl].debugs = s.debug_count;
         });
 
         if (rawData.users && rawData.user_groups_map) {
@@ -404,7 +405,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     studentStats[uid] = {
                         group: gNames, subs: 0, finalGrade: null, lastGradeDate: 0,
                         firstSub: null, lastSub: null,
-                        runs: 0, evals: 0
+                        vplMaxEffort: {}
                     };
                 }
             });
@@ -424,10 +425,12 @@ document.addEventListener('DOMContentLoaded', function() {
             
             let totalRuns = 0;
             let totalEvals = 0;
+            let totalDebugs = 0;
             if (st.vplMaxEffort) {
                 Object.values(st.vplMaxEffort).forEach(v => {
-                    totalRuns += v.runs;
-                    totalEvals += v.evals;
+                    totalRuns += v.runs || 0;
+                    totalEvals += v.evals || 0;
+                    totalDebugs += v.debugs || 0;
                 });
             }
             
@@ -440,6 +443,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <td>\${dFirst}</td>
                 <td>\${dLast}</td>
                 <td>\${totalRuns}</td>
+                <td>\${totalDebugs}</td>
                 <td>\${totalEvals}</td>
             `;
             tbody.appendChild(tr);
