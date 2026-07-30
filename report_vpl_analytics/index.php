@@ -106,6 +106,25 @@ document.addEventListener('DOMContentLoaded', function() {
     const primaryColor = '#007bff';
     const secondaryColor = '#9bca3e';
 
+    let expandedSubmissions = [];
+    if (rawData.submissions && rawData.users && rawData.user_groups_map) {
+        rawData.submissions.forEach(s => {
+            if (s.groupid && s.groupid > 0) {
+                let groupMembers = rawData.users.filter(uid => rawData.user_groups_map[uid] && rawData.user_groups_map[uid].includes(s.groupid));
+                if (groupMembers.length > 0) {
+                    groupMembers.forEach(uid => {
+                        expandedSubmissions.push({ ...s, userid: uid });
+                    });
+                } else {
+                    expandedSubmissions.push(s);
+                }
+            } else {
+                expandedSubmissions.push(s);
+            }
+        });
+        rawData.submissions = expandedSubmissions;
+    }
+
     const analysisModeEl = document.getElementById('analysisMode');
     const chartTypeEl = document.getElementById('chartType');
     const filterGroupEl = document.getElementById('filterGroup');
