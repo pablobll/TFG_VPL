@@ -9,8 +9,8 @@ require_capability('report/vpl_analytics:view', $context);
 
 $url = new moodle_url('/report/vpl_analytics/index.php', array('id' => $courseid));
 $PAGE->set_url($url);
-$PAGE->set_title('Dashboard Analítico VPL');
-$PAGE->set_heading('Dashboard Analítico VPL');
+$PAGE->set_title(get_string('dashboard_title', 'report_vpl_analytics'));
+$PAGE->set_heading(get_string('dashboard_title', 'report_vpl_analytics'));
 
 echo $OUTPUT->header();
 
@@ -46,32 +46,32 @@ echo '<style>
 echo '<div class="vpl-dashboard-wrapper">';
 
 echo '<div class="vpl-kpi-container">';
-echo '<div class="vpl-kpi-card"><div class="vpl-kpi-title">Nota Media Global</div><div class="vpl-kpi-value" id="kpiAvgGrade">--</div></div>';
-echo '<div class="vpl-kpi-card"><div class="vpl-kpi-title">Entregas Totales</div><div class="vpl-kpi-value" id="kpiTotalSubs">--</div></div>';
-echo '<div class="vpl-kpi-card"><div class="vpl-kpi-title">Alumnos Activos</div><div class="vpl-kpi-value" id="kpiActiveUsers">--</div></div>';
-echo '<div class="vpl-kpi-card"><div class="vpl-kpi-title">Alumnos Sin Actividad</div><div class="vpl-kpi-value danger" id="kpiInactiveUsers">--</div></div>';
+echo '<div class="vpl-kpi-card"><div class="vpl-kpi-title">' . get_string('kpi_avg_grade', 'report_vpl_analytics') . '</div><div class="vpl-kpi-value" id="kpiAvgGrade">--</div></div>';
+echo '<div class="vpl-kpi-card"><div class="vpl-kpi-title">' . get_string('kpi_total_subs', 'report_vpl_analytics') . '</div><div class="vpl-kpi-value" id="kpiTotalSubs">--</div></div>';
+echo '<div class="vpl-kpi-card"><div class="vpl-kpi-title">' . get_string('kpi_active_users', 'report_vpl_analytics') . '</div><div class="vpl-kpi-value" id="kpiActiveUsers">--</div></div>';
+echo '<div class="vpl-kpi-card"><div class="vpl-kpi-title">' . get_string('kpi_inactive_users', 'report_vpl_analytics') . '</div><div class="vpl-kpi-value danger" id="kpiInactiveUsers">--</div></div>';
 echo '</div>';
 
 echo '<div class="vpl-control-panel" style="flex-direction:column; gap:15px;">';
 
 echo '<div style="display:flex; width:100%; gap:20px; border-bottom:1px solid #dee2e6; padding-bottom:15px;">';
-echo '<div class="vpl-control-group"><label>Modo de Análisis</label><select id="analysisMode"><option value="global">Análisis Global</option><option value="compare_groups">Comparar Grupos</option><option value="compare_users">Comparar Alumnos</option></select></div>';
-echo '<div class="vpl-control-group"><label>Tipo de Visualización</label><select id="chartType"><option value="rendimiento">Distribución de Notas Finales</option><option value="evolucion">Evolución de Entregas en el Tiempo</option><option value="esfuerzo">Esfuerzo (Ejecuciones vs Evaluaciones)</option><option value="dedicacion">Tiempo Dedicado por Actividad</option><option value="dificultad">Dificultad por Actividad</option></select></div>';
-echo '<div class="vpl-control-group"><label>Actividad VPL</label><select id="filterVpl"><option value="all">Todas las actividades</option></select></div>';
+echo '<div class="vpl-control-group"><label>' . get_string('mode_analysis', 'report_vpl_analytics') . '</label><select id="analysisMode"><option value="global">' . get_string('mode_global', 'report_vpl_analytics') . '</option><option value="compare_groups">' . get_string('mode_compare_groups', 'report_vpl_analytics') . '</option><option value="compare_users">' . get_string('mode_compare_users', 'report_vpl_analytics') . '</option></select></div>';
+echo '<div class="vpl-control-group"><label>' . get_string('chart_type', 'report_vpl_analytics') . '</label><select id="chartType"><option value="rendimiento">' . get_string('chart_rendimiento', 'report_vpl_analytics') . '</option><option value="evolucion">' . get_string('chart_evolucion', 'report_vpl_analytics') . '</option><option value="esfuerzo">' . get_string('chart_esfuerzo', 'report_vpl_analytics') . '</option><option value="dedicacion">' . get_string('chart_dedicacion', 'report_vpl_analytics') . '</option><option value="dificultad">' . get_string('chart_dificultad', 'report_vpl_analytics') . '</option></select></div>';
+echo '<div class="vpl-control-group"><label>' . get_string('filter_vpl', 'report_vpl_analytics') . '</label><select id="filterVpl"><option value="all">' . get_string('all_vpls', 'report_vpl_analytics') . '</option></select></div>';
 echo '</div>';
 
 echo '<div id="panelGlobal" style="display:flex; gap:20px; width:100%;">';
-echo '<div class="vpl-control-group"><label>Filtrar por Grupo</label><select id="filterGroup"><option value="all">Todos los grupos</option></select></div>';
+echo '<div class="vpl-control-group"><label>' . get_string('filter_group', 'report_vpl_analytics') . '</label><select id="filterGroup"><option value="all">' . get_string('all_groups', 'report_vpl_analytics') . '</option></select></div>';
 echo '</div>';
 
 echo '<div id="panelCompareGroups" style="display:none; gap:20px; width:100%;">';
-echo '<div class="vpl-control-group"><label>Grupo 1 (Azul)</label><select id="compareGroup1"></select></div>';
-echo '<div class="vpl-control-group"><label>Grupo 2 (Verde)</label><select id="compareGroup2"></select></div>';
+echo '<div class="vpl-control-group"><label>' . get_string('group_1', 'report_vpl_analytics') . '</label><select id="compareGroup1"></select></div>';
+echo '<div class="vpl-control-group"><label>' . get_string('group_2', 'report_vpl_analytics') . '</label><select id="compareGroup2"></select></div>';
 echo '</div>';
 
 echo '<div id="panelCompareUsers" style="display:none; gap:20px; width:100%;">';
-echo '<div class="vpl-control-group"><label>Alumno 1 (Azul)</label><select id="compareUser1"></select></div>';
-echo '<div class="vpl-control-group"><label>Alumno 2 (Verde)</label><select id="compareUser2"></select></div>';
+echo '<div class="vpl-control-group"><label>' . get_string('user_1', 'report_vpl_analytics') . '</label><select id="compareUser1"></select></div>';
+echo '<div class="vpl-control-group"><label>' . get_string('user_2', 'report_vpl_analytics') . '</label><select id="compareUser2"></select></div>';
 echo '</div>';
 
 echo '</div>';
@@ -91,21 +91,43 @@ echo '</div>';
 echo '</div>';
 
 echo '<div id="tableScrollIndicator" style="text-align: right; font-size: 0.85em; color: #6c757d; margin-bottom: 5px; margin-top: 20px; display: none;">';
-echo '<i>↓ Desliza hacia abajo dentro de la tabla para ver más alumnos</i>';
+echo '<i>' . get_string('scroll_indicator', 'report_vpl_analytics') . '</i>';
 echo '</div>';
 
 echo '<div class="vpl-table-container" id="mainTableContainer" style="display: none; margin-top: 5px;">';
 echo '<table class="vpl-table">';
-echo '<thead><tr><th>Alumno (ID)</th><th>Grupo</th><th>Entregas</th><th>Nota Final</th><th>Primera Entrega</th><th>Última Entrega</th><th>Ejecuciones</th><th>Depuraciones</th><th>Evals. Auto.</th></tr></thead>';
+echo '<thead><tr><th>' . get_string('col_student', 'report_vpl_analytics') . '</th><th>' . get_string('col_group', 'report_vpl_analytics') . '</th><th>' . get_string('col_subs', 'report_vpl_analytics') . '</th><th>' . get_string('col_grade', 'report_vpl_analytics') . '</th><th>' . get_string('col_first_sub', 'report_vpl_analytics') . '</th><th>' . get_string('col_last_sub', 'report_vpl_analytics') . '</th><th>' . get_string('col_runs', 'report_vpl_analytics') . '</th><th>' . get_string('col_debugs', 'report_vpl_analytics') . '</th><th>' . get_string('col_evals', 'report_vpl_analytics') . '</th></tr></thead>';
 echo '<tbody id="dataTableBody"></tbody>';
 echo '</table>';
 echo '</div>';
 
 echo '</div>';
 
+
 echo "
 <script>
+const lang = {
+    warn_dificultad: '" . get_string('warn_dificultad', 'report_vpl_analytics') . "',
+    warn_dedicacion: '" . get_string('warn_dedicacion', 'report_vpl_analytics') . "',
+    warn_empty_dedicacion: '" . get_string('warn_empty_dedicacion', 'report_vpl_analytics') . "',
+    label_student: '" . get_string('label_student', 'report_vpl_analytics') . "',
+    label_group: '" . get_string('label_group', 'report_vpl_analytics') . "',
+    label_no_group: '" . get_string('label_no_group', 'report_vpl_analytics') . "',
+    label_no_students: '" . get_string('label_no_students', 'report_vpl_analytics') . "',
+    label_no_data: '" . get_string('label_no_data', 'report_vpl_analytics') . "',
+    label_subs: '" . get_string('label_subs', 'report_vpl_analytics') . "',
+    label_num_subs: '" . get_string('label_num_subs', 'report_vpl_analytics') . "',
+    label_students: '" . get_string('label_students', 'report_vpl_analytics') . "',
+    label_avg_grade: '" . get_string('label_avg_grade', 'report_vpl_analytics') . "',
+    label_qty: '" . get_string('label_qty', 'report_vpl_analytics') . "',
+    label_grade_range: '" . get_string('label_grade_range', 'report_vpl_analytics') . "',
+    label_time_spent: '" . get_string('label_time_spent', 'report_vpl_analytics') . "',
+    label_execs: '" . get_string('label_execs', 'report_vpl_analytics') . "',
+    label_evals: '" . get_string('label_evals', 'report_vpl_analytics') . "',
+    label_qty_students: '" . get_string('label_qty_students', 'report_vpl_analytics') . "'
+};
 document.addEventListener('DOMContentLoaded', function() {
+
     const rawData = {$dashboard_json};
     let currentChart = null;
     const primaryColor = '#007bff';
@@ -202,9 +224,9 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     rawData.users.forEach(uid => {
-        let opt1 = document.createElement('option'); opt1.value = uid; opt1.innerText = 'Alumno ' + uid;
+        let opt1 = document.createElement('option'); opt1.value = uid; opt1.innerText = lang.label_student + ' ' + uid;
         compareUser1El.appendChild(opt1);
-        let opt2 = document.createElement('option'); opt2.value = uid; opt2.innerText = 'Alumno ' + uid;
+        let opt2 = document.createElement('option'); opt2.value = uid; opt2.innerText = lang.label_student + ' ' + uid;
         compareUser2El.appendChild(opt2);
     });
 
@@ -286,8 +308,8 @@ document.addEventListener('DOMContentLoaded', function() {
             const gid2 = parseInt(compareGroup2El.value);
             let d1 = baseFiltered.filter(s => s.user_groups && s.user_groups.includes(gid1));
             let d2 = baseFiltered.filter(s => s.user_groups && s.user_groups.includes(gid2));
-            datasetsInfo.push({ label: groupMap[gid1] || 'Grupo ' + gid1, data: d1, color: primaryColor });
-            datasetsInfo.push({ label: groupMap[gid2] || 'Grupo ' + gid2, data: d2, color: secondaryColor });
+            datasetsInfo.push({ label: groupMap[gid1] || lang.label_group + ' ' + gid1, data: d1, color: primaryColor });
+            datasetsInfo.push({ label: groupMap[gid2] || lang.label_group + ' ' + gid2, data: d2, color: secondaryColor });
             
             let combinedMap = new Map();
             [...d1, ...d2].forEach(s => combinedMap.set(s.id, s));
@@ -314,8 +336,8 @@ document.addEventListener('DOMContentLoaded', function() {
             const uid2 = parseInt(compareUser2El.value);
             let d1 = baseFiltered.filter(s => s.userid === uid1);
             let d2 = baseFiltered.filter(s => s.userid === uid2);
-            datasetsInfo.push({ label: 'Alumno ' + uid1, data: d1, color: primaryColor });
-            datasetsInfo.push({ label: 'Alumno ' + uid2, data: d2, color: secondaryColor });
+            datasetsInfo.push({ label: lang.label_student + ' ' + uid1, data: d1, color: primaryColor });
+            datasetsInfo.push({ label: lang.label_student + ' ' + uid2, data: d2, color: secondaryColor });
             
             let combinedMap = new Map();
             [...d1, ...d2].forEach(s => combinedMap.set(s.id, s));
@@ -382,7 +404,7 @@ document.addEventListener('DOMContentLoaded', function() {
         subs.forEach(s => {
             if (!studentStats[s.userid]) {
                 let gNames = (s.user_groups || []).map(gid => groupMap[gid] || gid).join(', ');
-                if (!gNames) gNames = 'Sin Grupo';
+                if (!gNames) gNames = lang.label_no_group;
                 
                 studentStats[s.userid] = {
                     group: gNames, subs: 0, finalGrade: null, lastGradeDate: 0,
@@ -426,7 +448,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     let uGroups = rawData.user_groups_map[uid] || [];
                     if (uGroups.length === 0) uGroups = [0];
                     let gNames = uGroups.map(gid => groupMap[gid] || gid).join(', ');
-                    if (!gNames || gNames === '0') gNames = 'Sin Grupo';
+                    if (!gNames || gNames === '0') gNames = lang.label_no_group;
 
                     studentStats[uid] = {
                         group: gNames, subs: 0, finalGrade: null, lastGradeDate: 0,
@@ -439,7 +461,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         let sortedUsers = Object.keys(studentStats).sort((a,b) => a - b);
         if (sortedUsers.length === 0) {
-            tbody.innerHTML = '<tr><td colspan=\"8\" style=\"text-align:center\">No hay alumnos en esta selección.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan=\"8\" style=\"text-align:center\">' + lang.label_no_students + '</td></tr>';
             return;
         }
 
@@ -488,7 +510,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         let totalSubs = datasetsInfo.reduce((acc, ds) => acc + ds.data.length, 0);
         if (totalSubs === 0) {
-            currentChart = new Chart(ctx, { type: 'bar', data: { labels: ['Sin datos'], datasets: [{data:[0]}] }});
+            currentChart = new Chart(ctx, { type: 'bar', data: { labels: [lang.label_no_data], datasets: [{data:[0]}] }});
             document.getElementById('zoomControls').style.display = 'none';
             return;
         }
@@ -517,13 +539,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     let grade = g.grade;
                     if (grade < 2) {
                         ranges['0-2']++;
-                    } else if (g < 4) {
+                    } else if (grade < 4) {
                         ranges['2-4']++;
-                    } else if (g < 5) {
+                    } else if (grade < 5) {
                         ranges['4-5']++;
-                    } else if (g < 7) {
+                    } else if (grade < 7) {
                         ranges['5-7']++;
-                    } else if (g < 9) {
+                    } else if (grade < 9) {
                         ranges['7-9']++;
                     } else {
                         ranges['9-10']++;
@@ -533,7 +555,7 @@ document.addEventListener('DOMContentLoaded', function() {
             });
             commonLabels = Object.keys(rangesList[0]);
             chartDatasets = datasetsInfo.map((ds, i) => ({
-                label: 'Nº Entregas (' + ds.label + ')',
+                label: lang.label_num_subs + ' (' + ds.label + ')',
                 data: Object.values(rangesList[i]),
                 backgroundColor: ds.color
             }));
@@ -544,7 +566,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 options: {
                     responsive: true,
                     plugins: { legend: { display: false }, zoom: zoomOptions },
-                    scales: { y: { beginAtZero: true, title: {display:true, text:'Cantidad'} }, x: {title: {display:true, text:'Rango de Notas'}} }
+                    scales: { y: { beginAtZero: true, title: {display:true, text:lang.label_qty} }, x: {title: {display:true, text:lang.label_grade_range}} }
                 }
             });
 
@@ -593,7 +615,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         zoom: zoomOptions,
                         tooltip: { callbacks: { label: function(ctx) { return `Alumno \${ctx.raw.userid}: \${ctx.raw.x} ejec., \${ctx.raw.y} evals.`; } } }
                     },
-                    scales: { x: { title: { display: true, text: 'Nº de Ejecuciones' } }, y: { title: { display: true, text: 'Nº de Evaluaciones' } } }
+                    scales: { x: { title: { display: true, text: lang.label_execs } }, y: { title: { display: true, text: lang.label_evals } } }
                 }
             });
 
@@ -631,7 +653,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 options: {
                     responsive: true,
                     plugins: { legend: { display: false }, zoom: zoomOptions },
-                    scales: { x: { type: 'time', time: {unit: 'day'} }, y: { beginAtZero: true, title: {display:true, text:'Entregas'} } }
+                    scales: { x: { type: 'time', time: {unit: 'day'} }, y: { beginAtZero: true, title: {display:true, text:lang.label_subs} } }
                 }
             });
 
@@ -675,7 +697,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     return st && st.countGrade > 0 ? parseFloat((st.sumGrade / st.countGrade).toFixed(2)) : 0;
                 });
                 return {
-                    label: 'Nota Media (' + ds.label + ')',
+                    label: lang.label_avg_grade + ' (' + ds.label + ')',
                     data: dataArray,
                     backgroundColor: ds.color
                 };
@@ -685,7 +707,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 chartInner.style.minWidth = (commonLabels.length * 60) + 'px';
             }
 
-            chartWarning.innerText = '*(Esta gráfica solo está disponible en el modo Análisis Global y Todas las actividades en los filtros)*';
+            chartWarning.innerText = lang.warn_dificultad;
             chartWarning.style.display = 'block';
 
             currentChart = new Chart(ctx, {
@@ -698,7 +720,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         legend: { display: false },
                         zoom: zoomOptions 
                     },
-                    scales: { y: { beginAtZero: true, max: 10, title: {display:true, text:'Nota Media'} } }
+                    scales: { y: { beginAtZero: true, max: 10, title: {display:true, text:lang.label_avg_grade} } }
                 }
             });
         } else if (type === 'dedicacion') {
@@ -709,7 +731,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     options: {
                         responsive: true,
                         plugins: { 
-                            title: { display: true, text: '⚠️ Selecciona una actividad específica en el filtro superior.', font: {size: 16}, padding: {top: 50} }
+                            title: { display: true, text: lang.warn_empty_dedicacion, font: {size: 16}, padding: {top: 50} }
                         },
                         scales: { x: { display: false }, y: { display: false } }
                     }
@@ -732,9 +754,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     let hours = secs / 3600;
                     if (hours < 1) binCounts[0]++; else if (hours < 2) binCounts[1]++; else if (hours < 3) binCounts[2]++; else if (hours < 4) binCounts[3]++; else if (hours < 5) binCounts[4]++; else if (hours < 6) binCounts[5]++; else if (hours < 7) binCounts[6]++; else if (hours < 8) binCounts[7]++; else if (hours < 9) binCounts[8]++; else if (hours < 10) binCounts[9]++; else binCounts[10]++;
                 });
-                return { label: 'Alumnos (' + ds.label + ')', data: binCounts, backgroundColor: ds.color };
+                return { label: lang.label_students + ' (' + ds.label + ')', data: binCounts, backgroundColor: ds.color };
             });
-            chartWarning.innerText = '*(Umbral máximo de inactividad: 15 minutos)*';
+            chartWarning.innerText = lang.warn_dedicacion;
             chartWarning.style.display = 'block';
 
             currentChart = new Chart(ctx, {
@@ -743,7 +765,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 options: {
                     responsive: true,
                     plugins: { legend: { display: false }, zoom: zoomOptions },
-                    scales: { y: { beginAtZero: true, title: {display:true, text:'Cantidad de Alumnos'} }, x: { title: {display:true, text:'Horas Invertidas'} } }
+                    scales: { y: { beginAtZero: true, title: {display:true, text:lang.label_qty_students} }, x: { title: {display:true, text:lang.label_time_spent} } }
                 }
             });
         }
