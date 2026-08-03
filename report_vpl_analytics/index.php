@@ -56,7 +56,7 @@ echo '<div class="vpl-control-panel" style="flex-direction:column; gap:15px;">';
 
 echo '<div style="display:flex; width:100%; gap:20px; border-bottom:1px solid #dee2e6; padding-bottom:15px;">';
 echo '<div class="vpl-control-group"><label>Modo de Análisis</label><select id="analysisMode"><option value="global">Análisis Global</option><option value="compare_groups">Comparar Grupos</option><option value="compare_users">Comparar Alumnos</option></select></div>';
-echo '<div class="vpl-control-group"><label>Tipo de Visualización</label><select id="chartType"><option value="rendimiento">Distribución de Notas Finales</option><option value="evolucion">Evolución de Entregas en el Tiempo</option><option value="esfuerzo">Esfuerzo (Ejecuciones vs Evaluaciones)</option><option value="dificultad">Dificultad por Actividad</option></select></div>';
+echo '<div class="vpl-control-group"><label>Tipo de Visualización</label><select id="chartType"><option value="rendimiento">Distribución de Notas Finales</option><option value="evolucion">Evolución de Entregas en el Tiempo</option><option value="esfuerzo">Esfuerzo (Ejecuciones vs Evaluaciones)</option><option value="dedicacion">Tiempo Dedicado por Actividad</option><option value="dificultad">Dificultad por Actividad</option></select></div>';
 echo '<div class="vpl-control-group"><label>Actividad VPL</label><select id="filterVpl"><option value="all">Todas las actividades</option></select></div>';
 echo '</div>';
 
@@ -76,13 +76,18 @@ echo '</div>';
 
 echo '</div>';
 
+echo '<div id="chartWarning" style="text-align: center; font-style: italic; font-size: 13px; color: #6c757d; margin-bottom: 15px; display: none;"></div>';
 echo '<div class="vpl-canvas-container" style="position:relative;">';
 echo '<div id="zoomControls" style="position:absolute; top: 15px; right: 20px; display:flex; gap: 8px; z-index: 10; display:none;">';
 echo '<button type="button" id="btnZoomIn" style="padding: 6px 12px; background: #e9ecef; color: #212529; border: 1px solid #ced4da; border-radius: 4px; cursor: pointer; font-weight:bold;">+</button>';
 echo '<button type="button" id="btnZoomOut" style="padding: 6px 12px; background: #e9ecef; color: #212529; border: 1px solid #ced4da; border-radius: 4px; cursor: pointer; font-weight:bold;">-</button>';
 echo '<button type="button" id="btnZoomReset" style="padding: 6px 12px; background: #e9ecef; color: #212529; border: 1px solid #ced4da; border-radius: 4px; cursor: pointer;">Reset</button>';
 echo '</div>';
+echo '<div id="chartScrollWrapper" style="width: 100%; height: 100%; overflow-x: auto; overflow-y: hidden;">';
+echo '<div id="chartInner" style="height: 100%; min-width: 100%; position: relative;">';
 echo '<canvas id="mainChart"></canvas>';
+echo '</div>';
+echo '</div>';
 echo '</div>';
 
 echo '<div id="tableScrollIndicator" style="text-align: right; font-size: 0.85em; color: #6c757d; margin-bottom: 5px; margin-top: 20px; display: none;">';
@@ -124,6 +129,32 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         rawData.submissions = expandedSubmissions;
     }
+    
+    const SESSION_THRESHOLD = 900; 
+    const BASE_TIME = 300; 
+    rawData.timeOnTask = {}; 
+    let userVplSubs = {};
+    rawData.submissions.forEach(s => {
+        let key = s.userid + '_' + s.vpl;
+        if (!userVplSubs[key]) userVplSubs[key] = [];
+        userVplSubs[key].push(s.datesubmitted);
+    });
+    Object.keys(userVplSubs).forEach(key => {
+        let times = userVplSubs[key].sort((a,b) => a - b);
+        let totalSecs = 0;
+        if (times.length > 0) {
+            totalSecs += BASE_TIME;
+            for (let i = 1; i < times.length; i++) {
+                let diff = times[i] - times[i-1];
+                if (diff <= SESSION_THRESHOLD) {
+                    totalSecs += diff;
+                } else {
+                    totalSecs += BASE_TIME;
+                }
+            }
+        }
+        rawData.timeOnTask[key] = totalSecs;
+    });
 
     const analysisModeEl = document.getElementById('analysisMode');
     const chartTypeEl = document.getElementById('chartType');
@@ -198,32 +229,27 @@ document.addEventListener('DOMContentLoaded', function() {
         panelCompareGroups.style.display = 'none';
         panelCompareUsers.style.display = 'none';
         
-        const diffOption = Array.from(chartTypeEl.options).find(opt => opt.value === 'dificultad');
-        
         if (analysisModeEl.value === 'global') {
             panelGlobal.style.display = 'flex';
-            if (diffOption) {
-                diffOption.disabled = false;
-                diffOption.style.display = '';
-            }
         } else {
             if (analysisModeEl.value === 'compare_groups') panelCompareGroups.style.display = 'flex';
             else if (analysisModeEl.value === 'compare_users') panelCompareUsers.style.display = 'flex';
-            
-            if (diffOption) {
-                diffOption.disabled = true;
-                diffOption.style.display = 'none';
-                if (chartTypeEl.value === 'dificultad') {
-                    chartTypeEl.value = 'rendimiento';
-                }
-            }
         }
+        
         updateDashboard();
     });
 
     [chartTypeEl, filterGroupEl, filterVplEl, compareGroup1El, compareGroup2El, compareUser1El, compareUser2El].forEach(el => el.addEventListener('change', updateDashboard));
 
     function updateDashboard() {
+        const diffOption = Array.from(chartTypeEl.options).find(opt => opt.value === 'dificultad');
+        if (diffOption) { diffOption.disabled = false; diffOption.style.display = ''; }
+        
+        if (analysisModeEl.value !== 'global' || filterVplEl.value !== 'all') {
+            if (diffOption) { diffOption.disabled = true; diffOption.style.display = 'none'; }
+            if (chartTypeEl.value === 'dificultad') chartTypeEl.value = 'rendimiento';
+        }
+
         const mode = analysisModeEl.value;
         const type = chartTypeEl.value;
         const vplId = filterVplEl.value;
@@ -427,7 +453,8 @@ document.addEventListener('DOMContentLoaded', function() {
             let totalEvals = 0;
             let totalDebugs = 0;
             if (st.vplMaxEffort) {
-                Object.values(st.vplMaxEffort).forEach(v => {
+                Object.keys(st.vplMaxEffort).forEach(vplId => {
+                    let v = st.vplMaxEffort[vplId];
                     totalRuns += v.runs || 0;
                     totalEvals += v.evals || 0;
                     totalDebugs += v.debugs || 0;
@@ -453,6 +480,11 @@ document.addEventListener('DOMContentLoaded', function() {
     function renderChart(type, datasetsInfo) {
         if (currentChart) currentChart.destroy();
         const ctx = document.getElementById('mainChart').getContext('2d');
+        const chartInner = document.getElementById('chartInner');
+        chartInner.style.minWidth = '100%';
+        const chartWarning = document.getElementById('chartWarning');
+        chartWarning.style.display = 'none';
+        chartWarning.innerText = '';
 
         let totalSubs = datasetsInfo.reduce((acc, ds) => acc + ds.data.length, 0);
         if (totalSubs === 0) {
@@ -511,7 +543,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 data: { labels: commonLabels, datasets: chartDatasets },
                 options: {
                     responsive: true,
-                    plugins: { title: { display: true, text: 'Distribución de Notas', font: {size: 16} } },
+                    plugins: { legend: { display: false }, zoom: zoomOptions },
                     scales: { y: { beginAtZero: true, title: {display:true, text:'Cantidad'} }, x: {title: {display:true, text:'Rango de Notas'}} }
                 }
             });
@@ -557,7 +589,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 options: {
                     responsive: true,
                     plugins: { 
-                        title: { display: true, text: 'Esfuerzo Técnico', font: {size: 16} },
+                        legend: { display: false },
                         zoom: zoomOptions,
                         tooltip: { callbacks: { label: function(ctx) { return `Alumno \${ctx.raw.userid}: \${ctx.raw.x} ejec., \${ctx.raw.y} evals.`; } } }
                     },
@@ -598,7 +630,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 data: { datasets: chartDatasets },
                 options: {
                     responsive: true,
-                    plugins: { title: { display: true, text: 'Evolución de Entregas en el Tiempo', font: {size: 16} }, zoom: zoomOptions },
+                    plugins: { legend: { display: false }, zoom: zoomOptions },
                     scales: { x: { type: 'time', time: {unit: 'day'} }, y: { beginAtZero: true, title: {display:true, text:'Entregas'} } }
                 }
             });
@@ -634,7 +666,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 vplSets.forEach(vs => { if (vs[vid]) { sum += vs[vid].sumGrade; count += vs[vid].countGrade; } });
                 return { id: vid, name: allVplsMap[vid], avgSort: count > 0 ? (sum/count) : 0 };
             });
-            vplArray.sort((a,b) => a.avgSort - b.avgSort);
+            vplArray.sort((a,b) => a.id - b.id);
             commonLabels = vplArray.map(v => v.name);
 
             chartDatasets = datasetsInfo.map((ds, i) => {
@@ -649,13 +681,69 @@ document.addEventListener('DOMContentLoaded', function() {
                 };
             });
 
+            if (commonLabels.length > 10) {
+                chartInner.style.minWidth = (commonLabels.length * 60) + 'px';
+            }
+
+            chartWarning.innerText = '*(Esta gráfica solo está disponible en el modo Análisis Global y Todas las actividades en los filtros)*';
+            chartWarning.style.display = 'block';
+
             currentChart = new Chart(ctx, {
                 type: 'bar',
                 data: { labels: commonLabels, datasets: chartDatasets },
                 options: {
                     responsive: true,
-                    plugins: { title: { display: true, text: 'Dificultad por Actividad', font: {size: 16} }, zoom: zoomOptions },
+                    maintainAspectRatio: false,
+                    plugins: { 
+                        legend: { display: false },
+                        zoom: zoomOptions 
+                    },
                     scales: { y: { beginAtZero: true, max: 10, title: {display:true, text:'Nota Media'} } }
+                }
+            });
+        } else if (type === 'dedicacion') {
+            if (filterVplEl.value === 'all') {
+                currentChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: { labels: [], datasets: [] },
+                    options: {
+                        responsive: true,
+                        plugins: { 
+                            title: { display: true, text: '⚠️ Selecciona una actividad específica en el filtro superior.', font: {size: 16}, padding: {top: 50} }
+                        },
+                        scales: { x: { display: false }, y: { display: false } }
+                    }
+                });
+                return;
+            }
+
+            commonLabels = ['0-1h', '1-2h', '2-3h', '3-4h', '4-5h', '5-6h', '6-7h', '7-8h', '8-9h', '9-10h', '>10h'];
+            chartDatasets = datasetsInfo.map(ds => {
+                let binCounts = new Array(11).fill(0);
+                let userVpls = new Set();
+                ds.data.forEach(s => userVpls.add(s.userid + '_' + s.vpl));
+                let userTotalTime = {};
+                userVpls.forEach(key => {
+                    let parts = key.split('_'); let uid = parts[0];
+                    if (!userTotalTime[uid]) userTotalTime[uid] = 0;
+                    userTotalTime[uid] += (rawData.timeOnTask[key] || 0);
+                });
+                Object.values(userTotalTime).forEach(secs => {
+                    let hours = secs / 3600;
+                    if (hours < 1) binCounts[0]++; else if (hours < 2) binCounts[1]++; else if (hours < 3) binCounts[2]++; else if (hours < 4) binCounts[3]++; else if (hours < 5) binCounts[4]++; else if (hours < 6) binCounts[5]++; else if (hours < 7) binCounts[6]++; else if (hours < 8) binCounts[7]++; else if (hours < 9) binCounts[8]++; else if (hours < 10) binCounts[9]++; else binCounts[10]++;
+                });
+                return { label: 'Alumnos (' + ds.label + ')', data: binCounts, backgroundColor: ds.color };
+            });
+            chartWarning.innerText = '*(Umbral máximo de inactividad: 15 minutos)*';
+            chartWarning.style.display = 'block';
+
+            currentChart = new Chart(ctx, {
+                type: 'bar',
+                data: { labels: commonLabels, datasets: chartDatasets },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { display: false }, zoom: zoomOptions },
+                    scales: { y: { beginAtZero: true, title: {display:true, text:'Cantidad de Alumnos'} }, x: { title: {display:true, text:'Horas Invertidas'} } }
                 }
             });
         }
