@@ -98,13 +98,23 @@ class data_manager {
 
         $context = \context_course::instance($courseid);
         $enrolled_users_obj = get_enrolled_users($context, 'mod/vpl:submit', 0, 'u.id');
+        $teachers_obj = get_enrolled_users($context, 'mod/vpl:grade', 0, 'u.id');
+        $teacher_ids = [];
+        if ($teachers_obj) {
+            foreach ($teachers_obj as $t) {
+                $teacher_ids[(int)$t->id] = true;
+            }
+        }
+
         $all_enrolled_users = [];
         $enrolled_map = [];
         if ($enrolled_users_obj) {
             foreach ($enrolled_users_obj as $eu) {
                 $uid = (int)$eu->id;
-                $all_enrolled_users[] = $uid;
-                $enrolled_map[$uid] = true;
+                if (!isset($teacher_ids[$uid])) {
+                    $all_enrolled_users[] = $uid;
+                    $enrolled_map[$uid] = true;
+                }
             }
         }
         sort($all_enrolled_users);
