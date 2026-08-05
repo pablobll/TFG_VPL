@@ -17,10 +17,10 @@ echo $OUTPUT->header();
 $dashboard_data = \report_vpl_analytics\data_manager::get_dashboard_data($courseid);
 $dashboard_json = json_encode($dashboard_data);
 
-echo '<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>';
-echo '<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>';
-echo '<script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8"></script>';
-echo '<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1"></script>';
+echo '<script src="' . $CFG->wwwroot . '/report/vpl_analytics/js/vendor/chart.min.js"></script>';
+echo '<script src="' . $CFG->wwwroot . '/report/vpl_analytics/js/vendor/chartjs-adapter-date-fns.bundle.min.js"></script>';
+echo '<script src="' . $CFG->wwwroot . '/report/vpl_analytics/js/vendor/hammer.min.js"></script>';
+echo '<script src="' . $CFG->wwwroot . '/report/vpl_analytics/js/vendor/chartjs-plugin-zoom.min.js"></script>';
 
 echo '<style>
     .vpl-dashboard-wrapper { padding: 20px; font-family: inherit; }
