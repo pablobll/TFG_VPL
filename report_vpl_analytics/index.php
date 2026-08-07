@@ -124,7 +124,13 @@ const lang = {
     label_time_spent: '" . get_string('label_time_spent', 'report_vpl_analytics') . "',
     label_execs: '" . get_string('label_execs', 'report_vpl_analytics') . "',
     label_evals: '" . get_string('label_evals', 'report_vpl_analytics') . "',
-    label_qty_students: '" . get_string('label_qty_students', 'report_vpl_analytics') . "'
+    label_qty_students: '" . get_string('label_qty_students', 'report_vpl_analytics') . "',
+    cat_graded: '" . get_string('cat_graded', 'report_vpl_analytics') . "',
+    cat_ungraded: '" . get_string('cat_ungraded', 'report_vpl_analytics') . "',
+    cat_open: '" . get_string('cat_open', 'report_vpl_analytics') . "',
+    cat_closed: '" . get_string('cat_closed', 'report_vpl_analytics') . "',
+    cat_group: '" . get_string('cat_group', 'report_vpl_analytics') . "',
+    cat_individual: '" . get_string('cat_individual', 'report_vpl_analytics') . "'
 };
 document.addEventListener('DOMContentLoaded', function() {
 
@@ -132,6 +138,11 @@ document.addEventListener('DOMContentLoaded', function() {
     let currentChart = null;
     const primaryColor = '#007bff';
     const secondaryColor = '#9bca3e';
+    
+    const vplDict = {};
+    if (rawData.vpls) {
+        rawData.vpls.forEach(v => vplDict[v.id] = v);
+    }
 
     let expandedSubmissions = [];
     if (rawData.submissions && rawData.users && rawData.user_groups_map) {
@@ -140,7 +151,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 let groupMembers = rawData.users.filter(uid => rawData.user_groups_map[uid] && rawData.user_groups_map[uid].includes(s.groupid));
                 if (groupMembers.length > 0) {
                     groupMembers.forEach(uid => {
-                        expandedSubmissions.push({ ...s, userid: uid });
+                        expandedSubmissions.push({ ...s, id: s.id + '_' + uid, userid: uid });
                     });
                 } else {
                     expandedSubmissions.push(s);
@@ -224,17 +235,55 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     rawData.users.forEach(uid => {
-        let opt1 = document.createElement('option'); opt1.value = uid; opt1.innerText = lang.label_student + ' ' + uid;
+        let uName = rawData.user_names_map && rawData.user_names_map[uid] ? rawData.user_names_map[uid] : uid;
+        let opt1 = document.createElement('option');
+        opt1.value = uid; opt1.innerText = uName + ' (ID: ' + uid + ')';
         compareUser1El.appendChild(opt1);
-        let opt2 = document.createElement('option'); opt2.value = uid; opt2.innerText = lang.label_student + ' ' + uid;
+        
+        let opt2 = document.createElement('option');
+        opt2.value = uid; opt2.innerText = uName + ' (ID: ' + uid + ')';
         compareUser2El.appendChild(opt2);
     });
 
     if (rawData.vpls) {
-        rawData.vpls.forEach(v => {
+        const categories = [
+            { id: 'cat_graded', text: lang.cat_graded },
+            { id: 'cat_ungraded', text: lang.cat_ungraded },
+            { id: 'cat_open', text: lang.cat_open },
+            { id: 'cat_closed', text: lang.cat_closed },
+            { id: 'cat_group', text: lang.cat_group },
+            { id: 'cat_individual', text: lang.cat_individual }
+        ];
+        
+        categories.forEach(c => {
             let opt = document.createElement('option');
-            opt.value = v.id; opt.innerText = v.name;
+            opt.value = c.id; opt.innerText = c.text;
             filterVplEl.appendChild(opt);
+        });
+
+        let sep = document.createElement('option');
+        sep.disabled = true; sep.innerText = '──────────';
+        filterVplEl.appendChild(sep);
+
+        let sections = {};
+        rawData.vpls.forEach(v => {
+            if (!sections[v.section]) sections[v.section] = [];
+            sections[v.section].push(v);
+        });
+        
+        Object.keys(sections).forEach(secName => {
+            let secOpt = document.createElement('option');
+            secOpt.value = 'sec_' + secName;
+            secOpt.innerText = secName;
+            secOpt.style.fontWeight = 'bold';
+            filterVplEl.appendChild(secOpt);
+            
+            sections[secName].forEach(v => {
+                let opt = document.createElement('option');
+                opt.value = v.id; 
+                opt.innerHTML = '&nbsp;&nbsp;&nbsp;&nbsp;' + v.name;
+                filterVplEl.appendChild(opt);
+            });
         });
     } else {
         let uniqueVpls = {};
@@ -277,7 +326,26 @@ document.addEventListener('DOMContentLoaded', function() {
         const vplId = filterVplEl.value;
 
         let baseFiltered = rawData.submissions;
-        if (vplId !== 'all') baseFiltered = baseFiltered.filter(s => s.vpl == vplId);
+        if (vplId !== 'all') {
+            if (vplId === 'cat_graded') {
+                baseFiltered = baseFiltered.filter(s => vplDict[s.vpl] && vplDict[s.vpl].graded);
+            } else if (vplId === 'cat_ungraded') {
+                baseFiltered = baseFiltered.filter(s => vplDict[s.vpl] && !vplDict[s.vpl].graded);
+            } else if (vplId === 'cat_open') {
+                baseFiltered = baseFiltered.filter(s => vplDict[s.vpl] && !vplDict[s.vpl].closed);
+            } else if (vplId === 'cat_closed') {
+                baseFiltered = baseFiltered.filter(s => vplDict[s.vpl] && vplDict[s.vpl].closed);
+            } else if (vplId === 'cat_group') {
+                baseFiltered = baseFiltered.filter(s => vplDict[s.vpl] && vplDict[s.vpl].is_group);
+            } else if (vplId === 'cat_individual') {
+                baseFiltered = baseFiltered.filter(s => vplDict[s.vpl] && !vplDict[s.vpl].is_group);
+            } else if (vplId.startsWith('sec_')) {
+                const targetSec = vplId.substring(4);
+                baseFiltered = baseFiltered.filter(s => vplDict[s.vpl] && vplDict[s.vpl].section === targetSec);
+            } else {
+                baseFiltered = baseFiltered.filter(s => s.vpl == vplId);
+            }
+        }
 
         let datasetsInfo = [];
 
@@ -334,10 +402,12 @@ document.addEventListener('DOMContentLoaded', function() {
         } else if (mode === 'compare_users') {
             const uid1 = parseInt(compareUser1El.value);
             const uid2 = parseInt(compareUser2El.value);
+            let uName1 = rawData.user_names_map && rawData.user_names_map[uid1] ? rawData.user_names_map[uid1] : uid1;
+            let uName2 = rawData.user_names_map && rawData.user_names_map[uid2] ? rawData.user_names_map[uid2] : uid2;
             let d1 = baseFiltered.filter(s => s.userid === uid1);
             let d2 = baseFiltered.filter(s => s.userid === uid2);
-            datasetsInfo.push({ label: lang.label_student + ' ' + uid1, data: d1, color: primaryColor });
-            datasetsInfo.push({ label: lang.label_student + ' ' + uid2, data: d2, color: secondaryColor });
+            datasetsInfo.push({ label: uName1, data: d1, color: primaryColor });
+            datasetsInfo.push({ label: uName2, data: d2, color: secondaryColor });
             
             let combinedMap = new Map();
             [...d1, ...d2].forEach(s => combinedMap.set(s.id, s));
@@ -399,6 +469,12 @@ document.addEventListener('DOMContentLoaded', function() {
     function updateTable(subs, allowedGroupIds = null, allowedUserIds = null) {
         const tbody = document.getElementById('dataTableBody');
         tbody.innerHTML = '';
+        
+        let isSpecificVpl = !isNaN(parseInt(filterVplEl.value)) && !filterVplEl.value.startsWith('cat_') && !filterVplEl.value.startsWith('sec_') && filterVplEl.value !== 'all';
+        let gradeHeader = document.querySelector('.vpl-table thead th:nth-child(4)');
+        if (gradeHeader) {
+            gradeHeader.style.display = isSpecificVpl ? '' : 'none';
+        }
 
         let studentStats = {};
         subs.forEach(s => {
@@ -461,7 +537,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
         let sortedUsers = Object.keys(studentStats).sort((a,b) => a - b);
         if (sortedUsers.length === 0) {
-            tbody.innerHTML = '<tr><td colspan=\"8\" style=\"text-align:center\">' + lang.label_no_students + '</td></tr>';
+            let colCount = isSpecificVpl ? 9 : 8;
+            tbody.innerHTML = '<tr><td colspan=\"' + colCount + '\" style=\"text-align:center\">' + lang.label_no_students + '</td></tr>';
             return;
         }
 
@@ -469,6 +546,7 @@ document.addEventListener('DOMContentLoaded', function() {
             let st = studentStats[uid];
             let dFirst = st.firstSub ? new Date(st.firstSub * 1000).toLocaleDateString() : '--';
             let dLast = st.lastSub ? new Date(st.lastSub * 1000).toLocaleDateString() : '--';
+            
             let gradeStr = st.finalGrade !== null ? st.finalGrade.toFixed(2) : '--';
             
             let totalRuns = 0;
@@ -483,12 +561,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
             }
             
+            let uName = rawData.user_names_map && rawData.user_names_map[uid] ? rawData.user_names_map[uid] : uid;
             let tr = document.createElement('tr');
+            let gradeTd = isSpecificVpl ? `<td>\${gradeStr}</td>` : '';
             tr.innerHTML = `
-                <td>\${uid}</td>
+                <td>\${uName} (ID: \${uid})</td>
                 <td>\${st.group}</td>
                 <td>\${st.subs}</td>
-                <td>\${gradeStr}</td>
+                \${gradeTd}
                 <td>\${dFirst}</td>
                 <td>\${dLast}</td>
                 <td>\${totalRuns}</td>
@@ -613,7 +693,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     plugins: { 
                         legend: { display: false },
                         zoom: zoomOptions,
-                        tooltip: { callbacks: { label: function(ctx) { return `Alumno \${ctx.raw.userid}: \${ctx.raw.x} ejec., \${ctx.raw.y} evals.`; } } }
+                        tooltip: { callbacks: { label: function(ctx) { 
+                            let uid = ctx.raw.userid;
+                            let uName = rawData.user_names_map && rawData.user_names_map[uid] ? rawData.user_names_map[uid] : uid;
+                            return `\${uName}: \${ctx.raw.x} ejec., \${ctx.raw.y} evals.`; 
+                        } } }
                     },
                     scales: { x: { title: { display: true, text: lang.label_execs } }, y: { title: { display: true, text: lang.label_evals } } }
                 }

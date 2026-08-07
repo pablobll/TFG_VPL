@@ -30,8 +30,34 @@ class data_manager {
 
         $vpl_ids = array_keys($vpls);
         $vpls_data = [];
+        
+        $modinfo = get_fast_modinfo($courseid);
+        $now = time();
+
         foreach ($vpls as $vpl) {
-            $vpls_data[] = ['id' => $vpl->id, 'name' => $vpl->name];
+            $section_name = 'General';
+            $is_cm_group = false;
+            foreach ($modinfo->cms as $cm) {
+                if ($cm->modname === 'vpl' && $cm->instance == $vpl->id) {
+                    $sectioninfo = $modinfo->get_section_info($cm->sectionnum);
+                    $section_name = $sectioninfo->name ?: get_string('section') . ' ' . $cm->sectionnum;
+                    $is_cm_group = ($cm->groupmode > 0);
+                    break;
+                }
+            }
+
+            $is_graded = ($vpl->grade > 0);
+            $is_closed = ($vpl->duedate > 0 && $vpl->duedate < $now);
+            $is_group = ($vpl->worktype > 0);
+
+            $vpls_data[] = [
+                'id' => $vpl->id, 
+                'name' => $vpl->name,
+                'section' => $section_name,
+                'graded' => $is_graded,
+                'closed' => $is_closed,
+                'is_group' => $is_group
+            ];
         }
         
         list($in_sql, $in_params) = $DB->get_in_or_equal($vpl_ids);
@@ -43,22 +69,51 @@ class data_manager {
         $enriched_submissions = [];
         $unique_users = [];
 
+        $context = \context_course::instance($courseid);
+        $enrolled_users_obj = get_enrolled_users($context, 'mod/vpl:submit', 0, 'u.id, u.firstname, u.lastname');
+        $teachers_obj = get_enrolled_users($context, 'mod/vpl:grade', 0, 'u.id');
+        $teacher_ids = [];
+        if ($teachers_obj) {
+            foreach ($teachers_obj as $t) {
+                $teacher_ids[(int)$t->id] = true;
+            }
+        }
+
+        $all_enrolled_users = [];
+        $enrolled_map = [];
+        $user_names_map = [];
+        if ($enrolled_users_obj) {
+            foreach ($enrolled_users_obj as $eu) {
+                $uid = (int)$eu->id;
+                if (!isset($teacher_ids[$uid])) {
+                    $all_enrolled_users[] = $uid;
+                    $enrolled_map[$uid] = true;
+                    $user_names_map[$uid] = fullname($eu);
+                }
+            }
+        }
+        sort($all_enrolled_users);
+        $total_students = count($all_enrolled_users);
+
         $course_groups = groups_get_all_groups($courseid);
         $groups_data = [];
         $user_groups = [];
         if ($course_groups) {
             foreach ($course_groups as $g) {
                 $members = groups_get_members($g->id, 'u.id');
-                $member_count = $members ? count($members) : 0;
-                $groups_data[] = ['id' => $g->id, 'name' => $g->name, 'member_count' => $member_count];
+                $student_count = 0;
                 if ($members) {
                     foreach ($members as $u) {
-                        if (!isset($user_groups[$u->id])) {
-                            $user_groups[$u->id] = [];
+                        if (isset($enrolled_map[$u->id])) {
+                            $student_count++;
+                            if (!isset($user_groups[$u->id])) {
+                                $user_groups[$u->id] = [];
+                            }
+                            $user_groups[$u->id][] = (int)$g->id;
                         }
-                        $user_groups[$u->id][] = (int)$g->id;
                     }
                 }
+                $groups_data[] = ['id' => $g->id, 'name' => $g->name, 'member_count' => $student_count];
             }
         }
         
@@ -96,29 +151,6 @@ class data_manager {
             ];
         }
 
-        $context = \context_course::instance($courseid);
-        $enrolled_users_obj = get_enrolled_users($context, 'mod/vpl:submit', 0, 'u.id');
-        $teachers_obj = get_enrolled_users($context, 'mod/vpl:grade', 0, 'u.id');
-        $teacher_ids = [];
-        if ($teachers_obj) {
-            foreach ($teachers_obj as $t) {
-                $teacher_ids[(int)$t->id] = true;
-            }
-        }
-
-        $all_enrolled_users = [];
-        $enrolled_map = [];
-        if ($enrolled_users_obj) {
-            foreach ($enrolled_users_obj as $eu) {
-                $uid = (int)$eu->id;
-                if (!isset($teacher_ids[$uid])) {
-                    $all_enrolled_users[] = $uid;
-                    $enrolled_map[$uid] = true;
-                }
-            }
-        }
-        sort($all_enrolled_users);
-        $total_students = count($all_enrolled_users);
 
         $no_group_count = 0;
         foreach ($all_enrolled_users as $uid) {
@@ -142,6 +174,7 @@ class data_manager {
             'vpls' => $vpls_data,
             'groups' => $groups_data,
             'users' => $all_enrolled_users,
+            'user_names_map' => $user_names_map,
             'user_groups_map' => $user_groups,
             'total_students' => $total_students,
             'submissions' => $final_submissions
