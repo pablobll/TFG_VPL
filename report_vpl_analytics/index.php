@@ -46,22 +46,38 @@ echo '<style>
 echo '<div class="vpl-dashboard-wrapper">';
 
 echo '<div class="vpl-kpi-container">';
-echo '<div class="vpl-kpi-card"><div class="vpl-kpi-title">' . get_string('kpi_avg_grade', 'report_vpl_analytics') . '</div><div class="vpl-kpi-value" id="kpiAvgGrade">--</div></div>';
-echo '<div class="vpl-kpi-card"><div class="vpl-kpi-title">' . get_string('kpi_total_subs', 'report_vpl_analytics') . '</div><div class="vpl-kpi-value" id="kpiTotalSubs">--</div></div>';
-echo '<div class="vpl-kpi-card"><div class="vpl-kpi-title">' . get_string('kpi_active_users', 'report_vpl_analytics') . '</div><div class="vpl-kpi-value" id="kpiActiveUsers">--</div></div>';
-echo '<div class="vpl-kpi-card"><div class="vpl-kpi-title">' . get_string('kpi_inactive_users', 'report_vpl_analytics') . '</div><div class="vpl-kpi-value danger" id="kpiInactiveUsers">--</div></div>';
+echo '<div class="vpl-kpi-card" title="' . get_string('tooltip_avg_grade', 'report_vpl_analytics') . '"><div class="vpl-kpi-title">' . get_string('kpi_avg_grade', 'report_vpl_analytics') . '</div><div class="vpl-kpi-value" id="kpiAvgGrade">--</div></div>';
+echo '<div class="vpl-kpi-card" title="' . get_string('tooltip_pass_rate', 'report_vpl_analytics') . '"><div class="vpl-kpi-title">' . get_string('kpi_pass_rate', 'report_vpl_analytics') . '</div><div class="vpl-kpi-value" id="kpiPassRate">--</div></div>';
+echo '<div class="vpl-kpi-card" title="' . get_string('tooltip_exc_rate', 'report_vpl_analytics') . '"><div class="vpl-kpi-title">' . get_string('kpi_exc_rate', 'report_vpl_analytics') . '</div><div class="vpl-kpi-value" id="kpiExcRate">--</div></div>';
+echo '<div class="vpl-kpi-card" title="' . get_string('tooltip_median', 'report_vpl_analytics') . '"><div class="vpl-kpi-title">' . get_string('kpi_median', 'report_vpl_analytics') . '</div><div class="vpl-kpi-value" id="kpiMedian">--</div></div>';
+echo '<div class="vpl-kpi-card" title="' . get_string('tooltip_total_subs', 'report_vpl_analytics') . '"><div class="vpl-kpi-title">' . get_string('kpi_total_subs', 'report_vpl_analytics') . '</div><div class="vpl-kpi-value" id="kpiTotalSubs">0</div></div>';
+echo '<div class="vpl-kpi-card" title="' . get_string('tooltip_active_users', 'report_vpl_analytics') . '"><div class="vpl-kpi-title">' . get_string('kpi_active_users', 'report_vpl_analytics') . '</div><div class="vpl-kpi-value" id="kpiActiveUsers">0</div></div>';
+echo '<div class="vpl-kpi-card" title="' . get_string('tooltip_inactive_users', 'report_vpl_analytics') . '"><div class="vpl-kpi-title">' . get_string('kpi_inactive_users', 'report_vpl_analytics') . '</div><div class="vpl-kpi-value danger" id="kpiInactiveUsers">0</div></div>';
 echo '</div>';
 
 echo '<div class="vpl-control-panel" style="flex-direction:column; gap:15px;">';
 
-echo '<div style="display:flex; width:100%; gap:20px; border-bottom:1px solid #dee2e6; padding-bottom:15px;">';
+echo '<div style="display:flex; flex-wrap:wrap; align-items:flex-end; width:100%; gap:20px; border-bottom:1px solid #dee2e6; padding-bottom:15px; margin-bottom:15px;">';
 echo '<div class="vpl-control-group"><label>' . get_string('mode_analysis', 'report_vpl_analytics') . '</label><select id="analysisMode"><option value="global">' . get_string('mode_global', 'report_vpl_analytics') . '</option><option value="compare_groups">' . get_string('mode_compare_groups', 'report_vpl_analytics') . '</option><option value="compare_users">' . get_string('mode_compare_users', 'report_vpl_analytics') . '</option></select></div>';
-echo '<div class="vpl-control-group"><label>' . get_string('chart_type', 'report_vpl_analytics') . '</label><select id="chartType"><option value="rendimiento">' . get_string('chart_rendimiento', 'report_vpl_analytics') . '</option><option value="evolucion">' . get_string('chart_evolucion', 'report_vpl_analytics') . '</option><option value="esfuerzo">' . get_string('chart_esfuerzo', 'report_vpl_analytics') . '</option><option value="dedicacion">' . get_string('chart_dedicacion', 'report_vpl_analytics') . '</option><option value="dificultad">' . get_string('chart_dificultad', 'report_vpl_analytics') . '</option></select></div>';
-echo '<div class="vpl-control-group"><label>' . get_string('filter_vpl', 'report_vpl_analytics') . '</label><select id="filterVpl"><option value="all">' . get_string('all_vpls', 'report_vpl_analytics') . '</option></select></div>';
+echo '<div class="vpl-control-group"><label>' . get_string('chart_type', 'report_vpl_analytics') . ' <span title="' . get_string('tooltip_chart_type', 'report_vpl_analytics') . '">(?)</span></label><select id="chartType"><option value="rendimiento">' . get_string('chart_rendimiento', 'report_vpl_analytics') . '</option><option value="evolucion">' . get_string('chart_evolucion', 'report_vpl_analytics') . '</option><option value="esfuerzo">' . get_string('chart_esfuerzo', 'report_vpl_analytics') . '</option><option value="dedicacion">' . get_string('chart_dedicacion', 'report_vpl_analytics') . '</option><option value="dificultad">' . get_string('chart_dificultad', 'report_vpl_analytics') . '</option></select></div>';
+echo '<div class="vpl-control-group"><label>' . get_string('filter_date_from', 'report_vpl_analytics') . ' <span title="' . get_string('tooltip_date_from', 'report_vpl_analytics') . '">(?)</span></label><input type="date" id="filterDateFrom" class="vpl-date-input"></div>';
+echo '<div class="vpl-control-group">
+            <label>' . get_string('filter_date_to', 'report_vpl_analytics') . ' <span title="' . get_string('tooltip_date_to', 'report_vpl_analytics') . '">(?)</span></label>
+            <input type="date" id="filterDateTo" class="vpl-date-input">
+        </div>
+        <div class="vpl-control-group" style="justify-content:flex-end;">
+            <label>&nbsp;</label>
+            <button type="button" id="btnSettings" class="btn btn-secondary" style="padding:6px 12px; height:auto; cursor:pointer;" title="' . get_string('settings_title', 'report_vpl_analytics') . '">' . get_string('btn_settings', 'report_vpl_analytics') . '</button>
+        </div>
+        ';
 echo '</div>';
 
-echo '<div id="panelGlobal" style="display:flex; gap:20px; width:100%;">';
+echo '<div id="panelGlobal" style="display:flex; flex-wrap:wrap; align-items:flex-end; gap:20px; width:100%;">';
 echo '<div class="vpl-control-group"><label>' . get_string('filter_group', 'report_vpl_analytics') . '</label><select id="filterGroup"><option value="all">' . get_string('all_groups', 'report_vpl_analytics') . '</option></select></div>';
+echo '<div class="vpl-control-group">
+            <label>' . get_string('filter_vpl', 'report_vpl_analytics') . '</label>
+            <select id="filterVpl"><option value="all">' . get_string('all_vpls', 'report_vpl_analytics') . '</option></select>
+        </div>';
 echo '</div>';
 
 echo '<div id="panelCompareGroups" style="display:none; gap:20px; width:100%;">';
@@ -103,19 +119,52 @@ echo '</div>';
 
 echo '</div>';
 
+echo '
+<div id="settingsModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9999; justify-content:center; align-items:center;">
+    <div style="background:white; padding:20px; border-radius:5px; width:400px; box-shadow:0 4px 12px rgba(0,0,0,0.15);">
+        <h3 style="margin-top:0;">' . get_string('settings_title', 'report_vpl_analytics') . '</h3>
+        <p style="font-size:0.9em; color:#666;">' . get_string('settings_desc', 'report_vpl_analytics') . '</p>
+        <div style="margin-bottom:15px;">
+            <label style="display:block; margin-bottom:5px; font-weight:bold;">' . get_string('settings_stagnant', 'report_vpl_analytics') . '</label>
+            <div style="display:flex; gap:10px;">
+                <div style="flex:1;"><small>' . get_string('settings_stagnant_runs', 'report_vpl_analytics') . '</small><br><input type="number" id="settingStagnantEvals" value="15" style="width:100%;"></div>
+                <div style="flex:1;"><small>' . get_string('settings_stagnant_grade', 'report_vpl_analytics') . '</small><br><input type="number" id="settingStagnantGrade" value="5.0" step="0.1" style="width:100%;"></div>
+            </div>
+        </div>
+        <div style="margin-bottom:20px;">
+            <label style="display:block; margin-bottom:5px; font-weight:bold;">' . get_string('settings_procrastinate', 'report_vpl_analytics') . '</label>
+            <div><small>' . get_string('settings_procrastinate_hours', 'report_vpl_analytics') . '</small><br><input type="number" id="settingProcrastinateHours" value="24" style="width:100%;"></div>
+        </div>
+        <div style="text-align:right;">
+            <button type="button" id="btnSettingsCancel" style="padding:6px 12px; margin-right:10px; cursor:pointer;">' . get_string('settings_cancel', 'report_vpl_analytics') . '</button>
+            <button type="button" id="btnSettingsSave" style="padding:6px 12px; background:#007bff; color:white; border:none; border-radius:4px; cursor:pointer;">' . get_string('settings_save', 'report_vpl_analytics') . '</button>
+        </div>
+    </div>
+</div>
+';
 
 echo "
 <script>
 const lang = {
-    warn_dificultad: '" . get_string('warn_dificultad', 'report_vpl_analytics') . "',
-    warn_dedicacion: '" . get_string('warn_dedicacion', 'report_vpl_analytics') . "',
-    warn_empty_dedicacion: '" . get_string('warn_empty_dedicacion', 'report_vpl_analytics') . "',
     label_student: '" . get_string('label_student', 'report_vpl_analytics') . "',
     label_group: '" . get_string('label_group', 'report_vpl_analytics') . "',
     label_no_group: '" . get_string('label_no_group', 'report_vpl_analytics') . "',
-    label_no_students: '" . get_string('label_no_students', 'report_vpl_analytics') . "',
-    label_no_data: '" . get_string('label_no_data', 'report_vpl_analytics') . "',
     label_subs: '" . get_string('label_subs', 'report_vpl_analytics') . "',
+    label_avg_grade: '" . get_string('label_avg_grade', 'report_vpl_analytics') . "',
+    label_students: '" . get_string('label_students', 'report_vpl_analytics') . "',
+    label_no_students: '" . get_string('label_no_students', 'report_vpl_analytics') . "',
+    cat_graded: '" . get_string('cat_graded', 'report_vpl_analytics') . "',
+    cat_not_graded: '" . get_string('cat_not_graded', 'report_vpl_analytics') . "',
+    warn_dificultad: '" . get_string('warn_dificultad', 'report_vpl_analytics') . "',
+    warn_dedicacion: '" . get_string('warn_dedicacion', 'report_vpl_analytics') . "',
+    warn_empty_dedicacion: '" . get_string('warn_empty_dedicacion', 'report_vpl_analytics') . "',
+    label_runs: '" . get_string('col_runs', 'report_vpl_analytics') . "',
+    label_evals: '" . get_string('col_evals', 'report_vpl_analytics') . "',
+    badge_risk: '" . get_string('badge_risk', 'report_vpl_analytics') . "',
+    badge_risk_desc: '" . get_string('badge_risk_desc', 'report_vpl_analytics') . "',
+    badge_procrastinate: '" . get_string('badge_procrastinate', 'report_vpl_analytics') . "',
+    badge_procrastinate_desc: '" . get_string('badge_procrastinate_desc', 'report_vpl_analytics') . "',
+    label_no_data: '" . get_string('label_no_data', 'report_vpl_analytics') . "',
     label_num_subs: '" . get_string('label_num_subs', 'report_vpl_analytics') . "',
     label_students: '" . get_string('label_students', 'report_vpl_analytics') . "',
     label_avg_grade: '" . get_string('label_avg_grade', 'report_vpl_analytics') . "',
@@ -217,6 +266,13 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('btnZoomReset').addEventListener('click', () => {
         if (currentChart && typeof currentChart.resetZoom === 'function') currentChart.resetZoom();
     });
+    
+    document.getElementById('btnSettings').addEventListener('click', () => document.getElementById('settingsModal').style.display = 'flex');
+    document.getElementById('btnSettingsCancel').addEventListener('click', () => document.getElementById('settingsModal').style.display = 'none');
+    document.getElementById('btnSettingsSave').addEventListener('click', () => {
+        document.getElementById('settingsModal').style.display = 'none';
+        updateDashboard();
+    });
 
     let groupMap = {};
     let groupCountMap = {};
@@ -310,13 +366,17 @@ document.addEventListener('DOMContentLoaded', function() {
         updateDashboard();
     });
 
-    [chartTypeEl, filterGroupEl, filterVplEl, compareGroup1El, compareGroup2El, compareUser1El, compareUser2El].forEach(el => el.addEventListener('change', updateDashboard));
+    const filterDateFromEl = document.getElementById('filterDateFrom');
+    const filterDateToEl = document.getElementById('filterDateTo');
+    
+    [chartTypeEl, filterGroupEl, filterVplEl, compareGroup1El, compareGroup2El, compareUser1El, compareUser2El, filterDateFromEl, filterDateToEl].forEach(el => el.addEventListener('change', updateDashboard));
 
     function updateDashboard() {
         const diffOption = Array.from(chartTypeEl.options).find(opt => opt.value === 'dificultad');
         if (diffOption) { diffOption.disabled = false; diffOption.style.display = ''; }
         
-        if (analysisModeEl.value !== 'global' || filterVplEl.value !== 'all') {
+        let isSpecificVpl = !isNaN(parseInt(filterVplEl.value)) && !filterVplEl.value.startsWith('cat_') && !filterVplEl.value.startsWith('sec_') && filterVplEl.value !== 'all';
+        if (analysisModeEl.value !== 'global' || isSpecificVpl) {
             if (diffOption) { diffOption.disabled = true; diffOption.style.display = 'none'; }
             if (chartTypeEl.value === 'dificultad') chartTypeEl.value = 'rendimiento';
         }
@@ -326,6 +386,13 @@ document.addEventListener('DOMContentLoaded', function() {
         const vplId = filterVplEl.value;
 
         let baseFiltered = rawData.submissions;
+        
+        let tsFrom = filterDateFromEl.value ? new Date(filterDateFromEl.value).getTime() / 1000 : 0;
+        let tsTo = filterDateToEl.value ? new Date(filterDateToEl.value).getTime() / 1000 + 86399 : Infinity;
+        if (tsFrom > 0 || tsTo < Infinity) {
+            baseFiltered = baseFiltered.filter(s => s.datesubmitted >= tsFrom && s.datesubmitted <= tsTo);
+        }
+
         if (vplId !== 'all') {
             if (vplId === 'cat_graded') {
                 baseFiltered = baseFiltered.filter(s => vplDict[s.vpl] && vplDict[s.vpl].graded);
@@ -450,17 +517,42 @@ document.addEventListener('DOMContentLoaded', function() {
 
         let sumGrades = 0;
         let countGrades = 0;
+        let passCount = 0;
+        let excCount = 0;
+        let gradeArray = [];
         Object.values(finalGrades).forEach(g => {
             sumGrades += g.grade;
             countGrades++;
+            gradeArray.push(g.grade);
+            if (g.grade >= 5.0) passCount++;
+            if (g.grade >= 9.0) excCount++;
         });
 
-        const avgGrade = countGrades > 0 ? (sumGrades / countGrades).toFixed(2) : '0.00';
+        let avgStr = countGrades > 0 ? (sumGrades / countGrades).toFixed(2) : '0.00';
+        let passStr = countGrades > 0 ? ((passCount / countGrades) * 100).toFixed(1) + '%' : '0.0%';
+        let excStr = countGrades > 0 ? ((excCount / countGrades) * 100).toFixed(1) + '%' : '0.0%';
+        
+        let medianStr = '0.00';
+        if (gradeArray.length > 0) {
+            gradeArray.sort((a,b) => a - b);
+            let mid = Math.floor(gradeArray.length / 2);
+            let median = gradeArray.length % 2 !== 0 ? gradeArray[mid] : (gradeArray[mid - 1] + gradeArray[mid]) / 2.0;
+            medianStr = median.toFixed(2);
+        }
+
+        document.getElementById('kpiAvgGrade').innerText = avgStr;
+        
+        const elPass = document.getElementById('kpiPassRate');
+        if(elPass) elPass.innerText = passStr;
+        const elExc = document.getElementById('kpiExcRate');
+        if(elExc) elExc.innerText = excStr;
+        const elMed = document.getElementById('kpiMedian');
+        if(elMed) elMed.innerText = medianStr;
+
         const totalSubs = subs.length;
         const activeCount = activeUsers.size;
         const inactiveCount = Math.max(0, totalAllowed - activeCount);
 
-        document.getElementById('kpiAvgGrade').innerText = avgGrade;
         document.getElementById('kpiTotalSubs').innerText = totalSubs;
         document.getElementById('kpiActiveUsers').innerText = activeCount + (totalAllowed ? ' / ' + totalAllowed : '');
         document.getElementById('kpiInactiveUsers').innerText = inactiveCount;
@@ -479,17 +571,21 @@ document.addEventListener('DOMContentLoaded', function() {
         let studentStats = {};
         subs.forEach(s => {
             if (!studentStats[s.userid]) {
-                let gNames = (s.user_groups || []).map(gid => groupMap[gid] || gid).join(', ');
+                let uGroups = rawData.user_groups_map[s.userid] || [];
+                if (uGroups.length === 0) uGroups = [0];
+                let gNames = uGroups.map(gid => groupMap[gid] || gid).join(', ');
                 if (!gNames) gNames = lang.label_no_group;
                 
                 studentStats[s.userid] = {
                     group: gNames, subs: 0, finalGrade: null, lastGradeDate: 0,
                     firstSub: s.datesubmitted, lastSub: s.datesubmitted,
-                    vplMaxEffort: {}
+                    vplMaxEffort: {},
+                    isProcrastinator: false
                 };
             }
             let st = studentStats[s.userid];
             st.subs++;
+            
             if (s.grade !== null) {
                 if (st.finalGrade === null || s.datesubmitted > st.lastGradeDate) {
                     st.finalGrade = s.grade;
@@ -500,7 +596,14 @@ document.addEventListener('DOMContentLoaded', function() {
             if (s.datesubmitted > st.lastSub) st.lastSub = s.datesubmitted;
             
             if (!st.vplMaxEffort[s.vpl]) {
-                st.vplMaxEffort[s.vpl] = { runs: 0, evals: 0, debugs: 0 };
+                st.vplMaxEffort[s.vpl] = { runs: 0, evals: 0, debugs: 0, firstSub: s.datesubmitted, finalGrade: null, lastGradeDate: 0 };
+            }
+            if (s.datesubmitted < st.vplMaxEffort[s.vpl].firstSub) st.vplMaxEffort[s.vpl].firstSub = s.datesubmitted;
+            if (s.grade !== null) {
+                if (st.vplMaxEffort[s.vpl].finalGrade === null || s.datesubmitted > st.vplMaxEffort[s.vpl].lastGradeDate) {
+                    st.vplMaxEffort[s.vpl].finalGrade = s.grade;
+                    st.vplMaxEffort[s.vpl].lastGradeDate = s.datesubmitted;
+                }
             }
             if (s.run_count > st.vplMaxEffort[s.vpl].runs) st.vplMaxEffort[s.vpl].runs = s.run_count;
             if (s.nevaluations > st.vplMaxEffort[s.vpl].evals) st.vplMaxEffort[s.vpl].evals = s.nevaluations;
@@ -529,7 +632,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     studentStats[uid] = {
                         group: gNames, subs: 0, finalGrade: null, lastGradeDate: 0,
                         firstSub: null, lastSub: null,
-                        vplMaxEffort: {}
+                        vplMaxEffort: {},
+                        isProcrastinator: false
                     };
                 }
             });
@@ -552,20 +656,40 @@ document.addEventListener('DOMContentLoaded', function() {
             let totalRuns = 0;
             let totalEvals = 0;
             let totalDebugs = 0;
+            let isStagnant = false;
+            let isProcrastinator = false;
+            let stagEvals = parseInt(document.getElementById('settingStagnantEvals').value) || 15;
+            let stagGrade = parseFloat(document.getElementById('settingStagnantGrade').value) || 5.0;
+            let procHours = parseFloat(document.getElementById('settingProcrastinateHours').value) || 24;
+            
             if (st.vplMaxEffort) {
                 Object.keys(st.vplMaxEffort).forEach(vplId => {
                     let v = st.vplMaxEffort[vplId];
                     totalRuns += v.runs || 0;
                     totalEvals += v.evals || 0;
                     totalDebugs += v.debugs || 0;
+                    
+                    if (v.evals >= stagEvals && (v.finalGrade === null || v.finalGrade < stagGrade)) {
+                        isStagnant = true;
+                    }
+                    
+                    let vDue = vplDict[vplId] ? vplDict[vplId].duedate : 0;
+                    if (vDue > 0 && v.firstSub >= (vDue - (procHours * 3600))) {
+                        isProcrastinator = true;
+                    }
                 });
             }
             
             let uName = rawData.user_names_map && rawData.user_names_map[uid] ? rawData.user_names_map[uid] : uid;
+            
+            let badges = '';
+            if (isStagnant) badges += ' <span style=\\'background:#dc3545; color:white; padding:2px 6px; border-radius:10px; font-size:0.75em;\\' title=\\'' + lang.badge_risk_desc + '\\'>' + lang.badge_risk + '</span>';
+            if (isProcrastinator) badges += ' <span style=\\'background:#ffc107; color:black; padding:2px 6px; border-radius:10px; font-size:0.75em;\\' title=\\'' + lang.badge_procrastinate_desc + '\\'>' + lang.badge_procrastinate + '</span>';
+            
             let tr = document.createElement('tr');
             let gradeTd = isSpecificVpl ? `<td>\${gradeStr}</td>` : '';
             tr.innerHTML = `
-                <td>\${uName} (ID: \${uid})</td>
+                <td>\${uName} \${badges}</td>
                 <td>\${st.group}</td>
                 <td>\${st.subs}</td>
                 \${gradeTd}

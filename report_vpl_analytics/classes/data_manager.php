@@ -56,7 +56,8 @@ class data_manager {
                 'section' => $section_name,
                 'graded' => $is_graded,
                 'closed' => $is_closed,
-                'is_group' => $is_group
+                'is_group' => $is_group,
+                'duedate' => (int)$vpl->duedate
             ];
         }
         
@@ -67,7 +68,6 @@ class data_manager {
         $submissions = $DB->get_records_sql($sql, $in_params);
 
         $enriched_submissions = [];
-        $unique_users = [];
 
         $context = \context_course::instance($courseid);
         $enrolled_users_obj = get_enrolled_users($context, 'mod/vpl:submit', 0, 'u.id, u.firstname, u.lastname');
@@ -117,7 +117,7 @@ class data_manager {
             }
         }
         
-        $has_no_group = false;
+
 
         foreach ($submissions as $sub) {
             $vpl_id = $sub->vpl;
@@ -129,7 +129,7 @@ class data_manager {
                 $u_groups = [0];
             }
 
-            $unique_users[$user] = true;
+
 
             $grade = null;
             if ($sub->grade !== null && $sub->grade !== '') {
