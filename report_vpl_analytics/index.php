@@ -639,7 +639,11 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
 
-        let sortedUsers = Object.keys(studentStats).sort((a,b) => a - b);
+        let sortedUsers = Object.keys(studentStats).sort((a,b) => {
+            let nameA = rawData.user_names_map && rawData.user_names_map[a] ? rawData.user_names_map[a].toLowerCase() : a.toString();
+            let nameB = rawData.user_names_map && rawData.user_names_map[b] ? rawData.user_names_map[b].toLowerCase() : b.toString();
+            return nameA.localeCompare(nameB);
+        });
         if (sortedUsers.length === 0) {
             let colCount = isSpecificVpl ? 9 : 8;
             tbody.innerHTML = '<tr><td colspan=\"' + colCount + '\" style=\"text-align:center\">' + lang.label_no_students + '</td></tr>';

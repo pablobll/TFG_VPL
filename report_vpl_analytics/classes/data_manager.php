@@ -142,6 +142,7 @@ class data_manager {
                 'vpl_name' => $vpl_name,
                 'course' => (int)$courseid,
                 'userid' => (int)$user,
+                'groupid' => (int)$sub->groupid,
                 'user_groups' => $u_groups,
                 'datesubmitted' => (int)$sub->datesubmitted,
                 'grade' => $grade,
