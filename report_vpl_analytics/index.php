@@ -58,8 +58,8 @@ echo '</div>';
 echo '<div class="vpl-control-panel" style="flex-direction:column; gap:15px;">';
 
 echo '<div style="display:flex; flex-wrap:wrap; align-items:flex-end; width:100%; gap:20px; border-bottom:1px solid #dee2e6; padding-bottom:15px; margin-bottom:15px;">';
-echo '<div class="vpl-control-group"><label>' . get_string('mode_analysis', 'report_vpl_analytics') . '</label><select id="analysisMode"><option value="global">' . get_string('mode_global', 'report_vpl_analytics') . '</option><option value="compare_groups">' . get_string('mode_compare_groups', 'report_vpl_analytics') . '</option><option value="compare_users">' . get_string('mode_compare_users', 'report_vpl_analytics') . '</option></select></div>';
-echo '<div class="vpl-control-group"><label>' . get_string('chart_type', 'report_vpl_analytics') . ' <span title="' . get_string('tooltip_chart_type', 'report_vpl_analytics') . '">(?)</span></label><select id="chartType"><option value="rendimiento">' . get_string('chart_rendimiento', 'report_vpl_analytics') . '</option><option value="evolucion">' . get_string('chart_evolucion', 'report_vpl_analytics') . '</option><option value="esfuerzo">' . get_string('chart_esfuerzo', 'report_vpl_analytics') . '</option><option value="dedicacion">' . get_string('chart_dedicacion', 'report_vpl_analytics') . '</option><option value="dificultad">' . get_string('chart_dificultad', 'report_vpl_analytics') . '</option></select></div>';
+echo '<div class="vpl-control-group"><label>' . get_string('mode_analysis', 'report_vpl_analytics') . '</label><select id="analysisMode"><option value="global">' . get_string('mode_global', 'report_vpl_analytics') . '</option><option value="compare_groups">' . get_string('mode_compare_groups', 'report_vpl_analytics') . '</option><option value="compare_users">' . get_string('mode_compare_users', 'report_vpl_analytics') . '</option><option value="matriz">' . get_string('mode_matrix', 'report_vpl_analytics') . '</option></select></div>';
+echo '<div class="vpl-control-group"><label>' . get_string('chart_type', 'report_vpl_analytics') . ' <span title="' . get_string('tooltip_chart_type', 'report_vpl_analytics') . '">(?)</span></label><select id="chartType"><option value="rendimiento">' . get_string('chart_rendimiento', 'report_vpl_analytics') . '</option><option value="evolucion">' . get_string('chart_evolucion', 'report_vpl_analytics') . '</option><option value="esfuerzo">' . get_string('chart_esfuerzo', 'report_vpl_analytics') . '</option><option value="dedicacion">' . get_string('chart_dedicacion', 'report_vpl_analytics') . '</option><option value="dificultad">' . get_string('chart_dificultad', 'report_vpl_analytics') . '</option><option value="heatmap_tiempo">' . get_string('chart_heatmap', 'report_vpl_analytics') . '</option></select></div>';
 echo '<div class="vpl-control-group"><label>' . get_string('filter_date_from', 'report_vpl_analytics') . ' <span title="' . get_string('tooltip_date_from', 'report_vpl_analytics') . '">(?)</span></label><input type="date" id="filterDateFrom" class="vpl-date-input"></div>';
 echo '<div class="vpl-control-group">
             <label>' . get_string('filter_date_to', 'report_vpl_analytics') . ' <span title="' . get_string('tooltip_date_to', 'report_vpl_analytics') . '">(?)</span></label>
@@ -102,14 +102,15 @@ echo '</div>';
 echo '<div id="chartScrollWrapper" style="width: 100%; height: 100%; overflow-x: auto; overflow-y: hidden;">';
 echo '<div id="chartInner" style="height: 100%; min-width: 100%; position: relative;">';
 echo '<canvas id="mainChart"></canvas>';
+echo '<div id="customHtmlChart" style="display:none; width: 100%; height: 100%; box-sizing: border-box; overflow-y: auto;"></div>';
 echo '</div>';
 echo '</div>';
 echo '</div>';
 
-echo '<div id="tableScrollIndicator" style="text-align: right; font-size: 0.85em; color: #6c757d; margin-bottom: 5px; margin-top: 20px; display: none;">';
-echo '<i>' . get_string('scroll_indicator', 'report_vpl_analytics') . '</i>';
+echo '<div id="tableTopControls" style="display: none; justify-content: space-between; align-items: flex-end; margin-top: 20px; margin-bottom: 10px;">';
+echo '  <div style="flex:1;"><input type="text" id="tableSearch" placeholder="' . get_string('search_student', 'report_vpl_analytics') . '" style="width:100%; max-width:300px; padding:6px 10px; border:1px solid #ced4da; border-radius:4px; font-size:14px;" autocomplete="off"></div>';
+echo '  <div style="text-align: right; font-size: 0.85em; color: #6c757d;"><i>' . get_string('scroll_indicator', 'report_vpl_analytics') . '</i></div>';
 echo '</div>';
-
 echo '<div class="vpl-table-container" id="mainTableContainer" style="display: none; margin-top: 5px;">';
 echo '<table class="vpl-table">';
 echo '<thead><tr><th>' . get_string('col_student', 'report_vpl_analytics') . '</th><th>' . get_string('col_group', 'report_vpl_analytics') . '</th><th>' . get_string('col_subs', 'report_vpl_analytics') . '</th><th>' . get_string('col_grade', 'report_vpl_analytics') . '</th><th>' . get_string('col_first_sub', 'report_vpl_analytics') . '</th><th>' . get_string('col_last_sub', 'report_vpl_analytics') . '</th><th>' . get_string('col_runs', 'report_vpl_analytics') . '</th><th>' . get_string('col_debugs', 'report_vpl_analytics') . '</th><th>' . get_string('col_evals', 'report_vpl_analytics') . '</th></tr></thead>';
@@ -146,6 +147,8 @@ echo '
 echo "
 <script>
 const lang = {
+    col_student: '" . get_string('col_student', 'report_vpl_analytics') . "',
+    col_group: '" . get_string('col_group', 'report_vpl_analytics') . "',
     label_student: '" . get_string('label_student', 'report_vpl_analytics') . "',
     label_group: '" . get_string('label_group', 'report_vpl_analytics') . "',
     label_no_group: '" . get_string('label_no_group', 'report_vpl_analytics') . "',
@@ -359,6 +362,8 @@ document.addEventListener('DOMContentLoaded', function() {
         if (analysisModeEl.value === 'global') {
             panelGlobal.style.display = 'flex';
         } else {
+            filterVplEl.value = 'all';
+            filterGroupEl.value = 'all';
             if (analysisModeEl.value === 'compare_groups') panelCompareGroups.style.display = 'flex';
             else if (analysisModeEl.value === 'compare_users') panelCompareUsers.style.display = 'flex';
         }
@@ -375,10 +380,18 @@ document.addEventListener('DOMContentLoaded', function() {
         const diffOption = Array.from(chartTypeEl.options).find(opt => opt.value === 'dificultad');
         if (diffOption) { diffOption.disabled = false; diffOption.style.display = ''; }
         
+        const heatOption = Array.from(chartTypeEl.options).find(opt => opt.value === 'heatmap_tiempo');
+        if (heatOption) { heatOption.disabled = false; heatOption.style.display = ''; }
+        
         let isSpecificVpl = !isNaN(parseInt(filterVplEl.value)) && !filterVplEl.value.startsWith('cat_') && !filterVplEl.value.startsWith('sec_') && filterVplEl.value !== 'all';
         if (analysisModeEl.value !== 'global' || isSpecificVpl) {
             if (diffOption) { diffOption.disabled = true; diffOption.style.display = 'none'; }
             if (chartTypeEl.value === 'dificultad') chartTypeEl.value = 'rendimiento';
+        }
+        
+        if (analysisModeEl.value !== 'global') {
+            if (heatOption) { heatOption.disabled = true; heatOption.style.display = 'none'; }
+            if (chartTypeEl.value === 'heatmap_tiempo') chartTypeEl.value = 'rendimiento';
         }
 
         const mode = analysisModeEl.value;
@@ -415,6 +428,27 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         let datasetsInfo = [];
+        
+        if (mode === 'matriz') {
+            document.querySelector('.vpl-canvas-container').style.display = 'none';
+            document.getElementById('tableTopControls').style.display = 'flex';
+            document.getElementById('mainTableContainer').style.display = 'block';
+            document.querySelector('.vpl-kpi-container').style.display = 'none';
+            if (chartTypeEl.parentElement) chartTypeEl.parentElement.style.display = 'none';
+            
+            const groupId = filterGroupEl.value;
+            let finalData = baseFiltered;
+            if (groupId !== 'all') {
+                const gid = parseInt(groupId);
+                finalData = finalData.filter(s => s.user_groups && s.user_groups.includes(gid));
+            }
+            updateTable(finalData, null, null);
+            return;
+        } else {
+            document.querySelector('.vpl-canvas-container').style.display = 'block';
+            document.querySelector('.vpl-kpi-container').style.display = 'flex';
+            if (chartTypeEl.parentElement) chartTypeEl.parentElement.style.display = 'block';
+        }
 
         if (mode === 'global') {
             const groupId = filterGroupEl.value;
@@ -430,11 +464,11 @@ document.addEventListener('DOMContentLoaded', function() {
             updateKPIs(finalData, currentTotalStudents);
             
             if (groupId === 'all') {
+                document.getElementById('tableTopControls').style.display = 'none';
                 document.getElementById('mainTableContainer').style.display = 'none';
-                document.getElementById('tableScrollIndicator').style.display = 'none';
             } else {
+                document.getElementById('tableTopControls').style.display = 'flex';
                 document.getElementById('mainTableContainer').style.display = 'block';
-                document.getElementById('tableScrollIndicator').style.display = 'block';
                 updateTable(finalData, [parseInt(groupId)], null);
             }
             
@@ -646,9 +680,71 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         if (sortedUsers.length === 0) {
             let colCount = isSpecificVpl ? 9 : 8;
-            tbody.innerHTML = '<tr><td colspan=\"' + colCount + '\" style=\"text-align:center\">' + lang.label_no_students + '</td></tr>';
+            tbody.innerHTML = '<tr><td colspan=\\'' + colCount + '\\' style=\\'text-align:center\\'>' + lang.label_no_students + '</td></tr>';
             return;
         }
+
+        if (analysisModeEl.value === 'matriz') {
+            let activeVpls = new Set();
+            subs.forEach(s => activeVpls.add(s.vpl));
+            let vplList = Array.from(activeVpls).map(id => vplDict[id]).filter(v => v).sort((a,b) => a.duedate - b.duedate);
+            
+            let theadHtml = '<tr><th>' + lang.col_student + '</th><th>' + lang.col_group + '</th>';
+            vplList.forEach(v => {
+                let shortName = v.name.length > 15 ? v.name.substring(0,12) + '...' : v.name;
+                theadHtml += '<th title=\\'' + v.name + '\\' style=\\'text-align:center; min-width:80px;\\'>' + shortName + '</th>';
+            });
+            theadHtml += '</tr>';
+            document.querySelector('.vpl-table ' + 'thead').innerHTML = theadHtml;
+            
+            sortedUsers.forEach(uid => {
+                let st = studentStats[uid];
+                let uName = rawData.user_names_map && rawData.user_names_map[uid] ? rawData.user_names_map[uid] : uid;
+                let isStagnant = false;
+                let isProcrastinator = false;
+                let stagEvals = parseInt(document.getElementById('settingStagnantEvals').value);
+                let stagGrade = parseFloat(document.getElementById('settingStagnantGrade').value);
+                let procHours = parseInt(document.getElementById('settingProcrastinateHours').value);
+                
+                Object.keys(st.vplMaxEffort).forEach(vplId => {
+                    let v = st.vplMaxEffort[vplId];
+                    if (v.evals >= stagEvals && (v.finalGrade === null || v.finalGrade < stagGrade)) {
+                        isStagnant = true;
+                    }
+                    let vDue = vplDict[vplId] ? vplDict[vplId].duedate : 0;
+                    if (vDue > 0 && v.firstSub >= (vDue - (procHours * 3600))) {
+                        isProcrastinator = true;
+                    }
+                });
+                
+                let badges = '';
+                if (isStagnant) badges += ' <span style=\\'background:#dc3545; color:white; padding:2px 6px; border-radius:10px; font-size:0.75em;\\' title=\\'' + lang.badge_risk_desc + '\\'>' + lang.badge_risk + '</span>';
+                if (isProcrastinator) badges += ' <span style=\\'background:#ffc107; color:black; padding:2px 6px; border-radius:10px; font-size:0.75em;\\' title=\\'' + lang.badge_procrastinate_desc + '\\'>' + lang.badge_procrastinate + '</span>';
+                
+                let tr = document.createElement('tr');
+                let rowHtml = '<td>' + uName + badges + '</td><td>' + st.group + '</td>';
+                
+                vplList.forEach(v => {
+                    let vEffort = st.vplMaxEffort[v.id];
+                    if (!vEffort || vEffort.finalGrade === null) {
+                        rowHtml += '<td style=\\'background:#f8f9fa; color:#adb5bd; text-align:center;\\'>-</td>';
+                    } else {
+                        let grade = vEffort.finalGrade;
+                        let bg = grade >= 7.0 ? '#28a745' : (grade >= 5.0 ? '#ffc107' : '#dc3545');
+                        let color = (grade >= 5.0 && grade < 7.0) ? 'black' : 'white';
+                        rowHtml += '<td style=\\'background:' + bg + '; color:' + color + '; font-weight:bold; text-align:center;\\'>' + grade.toFixed(2) + '</td>';
+                    }
+                });
+                tr.innerHTML = rowHtml;
+                tbody.appendChild(tr);
+            });
+            return;
+        }
+
+        document.querySelector('.vpl-table ' + 'thead').innerHTML = '<tr><th>' + lang.col_student + '</th><th>' + lang.col_group + '</th><th>' + lang.label_subs + '</th><th class=\\'col-grade\\'>' + lang.label_avg_grade + '</th><th>First Sub</th><th>Last Sub</th><th>' + lang.label_runs + '</th><th>Debugs</th><th>' + lang.label_evals + '</th></tr>';
+        
+        let gradeHeaderNode = document.querySelector('.vpl-table thead th.col-grade');
+        if (gradeHeaderNode) gradeHeaderNode.style.display = isSpecificVpl ? '' : 'none';
 
         sortedUsers.forEach(uid => {
             let st = studentStats[uid];
@@ -718,10 +814,57 @@ document.addEventListener('DOMContentLoaded', function() {
 
         let totalSubs = datasetsInfo.reduce((acc, ds) => acc + ds.data.length, 0);
         if (totalSubs === 0) {
+            document.getElementById('mainChart').style.display = 'block';
+            document.getElementById('customHtmlChart').style.display = 'none';
             currentChart = new Chart(ctx, { type: 'bar', data: { labels: [lang.label_no_data], datasets: [{data:[0]}] }});
             document.getElementById('zoomControls').style.display = 'none';
             return;
         }
+
+        if (type === 'heatmap_tiempo') {
+            document.getElementById('mainChart').style.display = 'none';
+            document.getElementById('customHtmlChart').style.display = 'block';
+            document.getElementById('zoomControls').style.display = 'none';
+            
+            let matrix = Array(7).fill(0).map(() => Array(24).fill(0));
+            let maxVal = 0;
+            datasetsInfo.forEach(ds => {
+                ds.data.forEach(s => {
+                    let d = new Date(s.datesubmitted * 1000);
+                    let day = d.getDay();
+                    let hour = d.getHours();
+                    matrix[day][hour]++;
+                    if (matrix[day][hour] > maxVal) maxVal = matrix[day][hour];
+                });
+            });
+            
+            let daysArr = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+            let html = '<table style=\\'width:100%; border-collapse:collapse; text-align:center; font-size:12px; font-family:sans-serif;\\'>';
+            html += '<tr><th></th>';
+            for(let h=0; h<24; h++) html += '<th style=\\'padding:4px; color:#6c757d;\\'>' + h + 'h</th>';
+            html += '</tr>';
+            
+            let order = [1,2,3,4,5,6,0];
+            order.forEach(dayIdx => {
+                html += '<tr><td style=\\'font-weight:bold; padding:8px; text-align:right; color:#495057;\\'>' + daysArr[dayIdx] + '</td>';
+                for(let h=0; h<24; h++) {
+                    let val = matrix[dayIdx][h];
+                    let intensity = maxVal > 0 ? (val / maxVal) : 0;
+                    let bg = 'rgba(0, 123, 255, ' + intensity + ')';
+                    let color = intensity > 0.5 ? 'white' : (val > 0 ? '#212529' : 'transparent');
+                    let title = val + ' entregas';
+                    html += '<td style=\\'background:' + bg + '; color:' + color + '; padding:8px; border:1px solid #e9ecef; font-weight:bold; cursor:crosshair;\\' title=\\'' + title + '\\'>' + (val > 0 ? val : '') + '</td>';
+                }
+                html += '</tr>';
+            });
+            html += '</table>';
+            
+            document.getElementById('customHtmlChart').innerHTML = html;
+            return;
+        }
+
+        document.getElementById('mainChart').style.display = 'block';
+        document.getElementById('customHtmlChart').style.display = 'none';
 
         let zoomControls = document.getElementById('zoomControls');
         if (type === 'esfuerzo' || type === 'evolucion') zoomControls.style.display = 'flex';
@@ -982,6 +1125,17 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
     }
+
+    document.getElementById('tableSearch').addEventListener('input', function(e) {
+        let term = e.target.value.toLowerCase();
+        let rows = document.querySelectorAll('#dataTableBody tr');
+        rows.forEach(row => {
+            if (row.cells.length > 0) {
+                let text = row.cells[0].textContent.toLowerCase();
+                row.style.display = text.includes(term) ? '' : 'none';
+            }
+        });
+    });
 
     updateDashboard();
 });
