@@ -133,7 +133,13 @@ class data_manager {
 
             $grade = null;
             if ($sub->grade !== null && $sub->grade !== '') {
-                $grade = (float)$sub->grade;
+                $raw_grade = (float)$sub->grade;
+                $max_grade = (float)$vpls[$vpl_id]->grade;
+                if ($max_grade > 0) {
+                    $grade = $raw_grade / $max_grade;
+                } else {
+                    $grade = $raw_grade;
+                }
             }
 
             $enriched_submissions[] = [

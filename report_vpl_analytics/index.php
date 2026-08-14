@@ -136,6 +136,14 @@ echo '
             <label style="display:block; margin-bottom:5px; font-weight:bold;">' . get_string('settings_procrastinate', 'report_vpl_analytics') . '</label>
             <div><small>' . get_string('settings_procrastinate_hours', 'report_vpl_analytics') . '</small><br><input type="number" id="settingProcrastinateHours" value="24" style="width:100%;"></div>
         </div>
+        <div style="margin-bottom:20px;">
+            <label style="display:block; margin-bottom:5px; font-weight:bold;">' . get_string('settings_grade_scale', 'report_vpl_analytics') . '</label>
+            <select id="settingGradeScale" style="width:100%; padding:6px; border:1px solid #ced4da; border-radius:4px;">
+                <option value="10">' . get_string('scale_base10', 'report_vpl_analytics') . '</option>
+                <option value="100">' . get_string('scale_base100', 'report_vpl_analytics') . '</option>
+                <option value="letters">' . get_string('scale_letters', 'report_vpl_analytics') . '</option>
+            </select>
+        </div>
         <div style="text-align:right;">
             <button type="button" id="btnSettingsCancel" style="padding:6px 12px; margin-right:10px; cursor:pointer;">' . get_string('settings_cancel', 'report_vpl_analytics') . '</button>
             <button type="button" id="btnSettingsSave" style="padding:6px 12px; background:#007bff; color:white; border:none; border-radius:4px; cursor:pointer;">' . get_string('settings_save', 'report_vpl_analytics') . '</button>
@@ -187,6 +195,41 @@ const lang = {
 document.addEventListener('DOMContentLoaded', function() {
 
     const rawData = {$dashboard_json};
+    
+    function getSelectedScale() {
+        return document.getElementById('settingGradeScale').value || '10';
+    }
+
+    function formatGradeStr(normalizedGrade) {
+        if (normalizedGrade === null || isNaN(normalizedGrade)) return '--';
+        let scale = getSelectedScale();
+        if (scale === '100') {
+            return (normalizedGrade * 100).toFixed(1);
+        } else if (scale === 'letters') {
+            if (normalizedGrade >= 0.9) return 'A';
+            if (normalizedGrade >= 0.8) return 'B';
+            if (normalizedGrade >= 0.7) return 'C';
+            if (normalizedGrade >= 0.6) return 'D';
+            return 'F';
+        } else {
+            return (normalizedGrade * 10).toFixed(2);
+        }
+    }
+
+    function getGradeColor(normalizedGrade) {
+        if (normalizedGrade === null || isNaN(normalizedGrade)) return 'transparent';
+        if (normalizedGrade >= 0.7) return '#28a745';
+        if (normalizedGrade >= 0.5) return '#ffc107';
+        return '#dc3545';
+    }
+
+    function getNormalizedStagnantGrade() {
+        let stagVal = parseFloat(document.getElementById('settingStagnantGrade').value) || 5.0;
+        let scale = getSelectedScale();
+        if (scale === '100') return stagVal / 100.0;
+        return stagVal / 10.0;
+    }
+
     let currentChart = null;
     const primaryColor = '#007bff';
     const secondaryColor = '#9bca3e';
@@ -558,20 +601,20 @@ document.addEventListener('DOMContentLoaded', function() {
             sumGrades += g.grade;
             countGrades++;
             gradeArray.push(g.grade);
-            if (g.grade >= 5.0) passCount++;
-            if (g.grade >= 9.0) excCount++;
+            if (g.grade >= 0.5) passCount++;
+            if (g.grade >= 0.9) excCount++;
         });
 
-        let avgStr = countGrades > 0 ? (sumGrades / countGrades).toFixed(2) : '0.00';
+        let avgStr = countGrades > 0 ? formatGradeStr(sumGrades / countGrades) : formatGradeStr(0);
         let passStr = countGrades > 0 ? ((passCount / countGrades) * 100).toFixed(1) + '%' : '0.0%';
         let excStr = countGrades > 0 ? ((excCount / countGrades) * 100).toFixed(1) + '%' : '0.0%';
         
-        let medianStr = '0.00';
+        let medianStr = formatGradeStr(0);
         if (gradeArray.length > 0) {
             gradeArray.sort((a,b) => a - b);
             let mid = Math.floor(gradeArray.length / 2);
             let median = gradeArray.length % 2 !== 0 ? gradeArray[mid] : (gradeArray[mid - 1] + gradeArray[mid]) / 2.0;
-            medianStr = median.toFixed(2);
+            medianStr = formatGradeStr(median);
         }
 
         document.getElementById('kpiAvgGrade').innerText = avgStr;
@@ -703,7 +746,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 let isStagnant = false;
                 let isProcrastinator = false;
                 let stagEvals = parseInt(document.getElementById('settingStagnantEvals').value);
-                let stagGrade = parseFloat(document.getElementById('settingStagnantGrade').value);
+                let stagGrade = getNormalizedStagnantGrade();
                 let procHours = parseInt(document.getElementById('settingProcrastinateHours').value);
                 
                 Object.keys(st.vplMaxEffort).forEach(vplId => {
@@ -730,9 +773,9 @@ document.addEventListener('DOMContentLoaded', function() {
                         rowHtml += '<td style=\\'background:#f8f9fa; color:#adb5bd; text-align:center;\\'>-</td>';
                     } else {
                         let grade = vEffort.finalGrade;
-                        let bg = grade >= 7.0 ? '#28a745' : (grade >= 5.0 ? '#ffc107' : '#dc3545');
-                        let color = (grade >= 5.0 && grade < 7.0) ? 'black' : 'white';
-                        rowHtml += '<td style=\\'background:' + bg + '; color:' + color + '; font-weight:bold; text-align:center;\\'>' + grade.toFixed(2) + '</td>';
+                        let bg = getGradeColor(grade);
+                        let color = (grade >= 0.5 && grade < 0.7) ? 'black' : 'white';
+                        rowHtml += '<td style=\\'background:' + bg + '; color:' + color + '; font-weight:bold; text-align:center;\\'>' + formatGradeStr(grade) + '</td>';
                     }
                 });
                 tr.innerHTML = rowHtml;
@@ -751,7 +794,7 @@ document.addEventListener('DOMContentLoaded', function() {
             let dFirst = st.firstSub ? new Date(st.firstSub * 1000).toLocaleDateString() : '--';
             let dLast = st.lastSub ? new Date(st.lastSub * 1000).toLocaleDateString() : '--';
             
-            let gradeStr = st.finalGrade !== null ? st.finalGrade.toFixed(2) : '--';
+            let gradeStr = formatGradeStr(st.finalGrade);
             
             let totalRuns = 0;
             let totalEvals = 0;
@@ -759,7 +802,7 @@ document.addEventListener('DOMContentLoaded', function() {
             let isStagnant = false;
             let isProcrastinator = false;
             let stagEvals = parseInt(document.getElementById('settingStagnantEvals').value) || 15;
-            let stagGrade = parseFloat(document.getElementById('settingStagnantGrade').value) || 5.0;
+            let stagGrade = getNormalizedStagnantGrade();
             let procHours = parseFloat(document.getElementById('settingProcrastinateHours').value) || 24;
             
             if (st.vplMaxEffort) {
@@ -874,8 +917,19 @@ document.addEventListener('DOMContentLoaded', function() {
         let commonLabels = [];
 
         if (type === 'rendimiento') {
+            let scale = getSelectedScale();
+            let binKeys = [];
+            if (scale === '100') {
+                binKeys = ['0-20', '20-40', '40-50', '50-70', '70-90', '90-100'];
+            } else if (scale === 'letters') {
+                binKeys = ['F', 'D', 'C', 'B', 'A'];
+            } else {
+                binKeys = ['0-2', '2-4', '4-5', '5-7', '7-9', '9-10'];
+            }
+
             let rangesList = datasetsInfo.map(ds => {
-                let ranges = {'0-2':0, '2-4':0, '4-5':0, '5-7':0, '7-9':0, '9-10':0};
+                let ranges = {};
+                binKeys.forEach(k => ranges[k] = 0);
                 
                 let finalGrades = {};
                 ds.data.forEach(s => {
@@ -888,18 +942,26 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 Object.values(finalGrades).forEach(g => {
                     let grade = g.grade;
-                    if (grade < 2) {
-                        ranges['0-2']++;
-                    } else if (grade < 4) {
-                        ranges['2-4']++;
-                    } else if (grade < 5) {
-                        ranges['4-5']++;
-                    } else if (grade < 7) {
-                        ranges['5-7']++;
-                    } else if (grade < 9) {
-                        ranges['7-9']++;
+                    if (scale === '100') {
+                        if (grade < 0.2) ranges['0-20']++;
+                        else if (grade < 0.4) ranges['20-40']++;
+                        else if (grade < 0.5) ranges['40-50']++;
+                        else if (grade < 0.7) ranges['50-70']++;
+                        else if (grade < 0.9) ranges['70-90']++;
+                        else ranges['90-100']++;
+                    } else if (scale === 'letters') {
+                        if (grade < 0.6) ranges['F']++;
+                        else if (grade < 0.7) ranges['D']++;
+                        else if (grade < 0.8) ranges['C']++;
+                        else if (grade < 0.9) ranges['B']++;
+                        else ranges['A']++;
                     } else {
-                        ranges['9-10']++;
+                        if (grade < 0.2) ranges['0-2']++;
+                        else if (grade < 0.4) ranges['2-4']++;
+                        else if (grade < 0.5) ranges['4-5']++;
+                        else if (grade < 0.7) ranges['5-7']++;
+                        else if (grade < 0.9) ranges['7-9']++;
+                        else ranges['9-10']++;
                     }
                 });
                 return ranges;
