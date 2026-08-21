@@ -59,7 +59,7 @@ echo '<div class="vpl-control-panel" style="flex-direction:column; gap:15px;">';
 
 echo '<div style="display:flex; flex-wrap:wrap; align-items:flex-end; width:100%; gap:20px; border-bottom:1px solid #dee2e6; padding-bottom:15px; margin-bottom:15px;">';
 echo '<div class="vpl-control-group"><label>' . get_string('mode_analysis', 'report_vpl_analytics') . '</label><select id="analysisMode"><option value="global">' . get_string('mode_global', 'report_vpl_analytics') . '</option><option value="compare_groups">' . get_string('mode_compare_groups', 'report_vpl_analytics') . '</option><option value="compare_users">' . get_string('mode_compare_users', 'report_vpl_analytics') . '</option><option value="matriz">' . get_string('mode_matrix', 'report_vpl_analytics') . '</option></select></div>';
-echo '<div class="vpl-control-group"><label>' . get_string('chart_type', 'report_vpl_analytics') . ' <span title="' . get_string('tooltip_chart_type', 'report_vpl_analytics') . '">(?)</span></label><select id="chartType"><option value="rendimiento">' . get_string('chart_rendimiento', 'report_vpl_analytics') . '</option><option value="evolucion">' . get_string('chart_evolucion', 'report_vpl_analytics') . '</option><option value="esfuerzo">' . get_string('chart_esfuerzo', 'report_vpl_analytics') . '</option><option value="dedicacion">' . get_string('chart_dedicacion', 'report_vpl_analytics') . '</option><option value="dificultad">' . get_string('chart_dificultad', 'report_vpl_analytics') . '</option><option value="heatmap_tiempo">' . get_string('chart_heatmap', 'report_vpl_analytics') . '</option></select></div>';
+echo '<div class="vpl-control-group"><label>' . get_string('chart_type', 'report_vpl_analytics') . ' <span title="' . get_string('tooltip_chart_type', 'report_vpl_analytics') . '">(?)</span></label><select id="chartType"><option value="rendimiento">' . get_string('chart_rendimiento', 'report_vpl_analytics') . '</option><option value="evolucion">' . get_string('chart_evolucion', 'report_vpl_analytics') . '</option><option value="esfuerzo">' . get_string('chart_esfuerzo', 'report_vpl_analytics') . '</option><option value="heatmap_tiempo">' . get_string('chart_heatmap', 'report_vpl_analytics') . '</option></select></div>';
 echo '<div class="vpl-control-group"><label>' . get_string('filter_date_from', 'report_vpl_analytics') . ' <span title="' . get_string('tooltip_date_from', 'report_vpl_analytics') . '">(?)</span></label><input type="date" id="filterDateFrom" class="vpl-date-input"></div>';
 echo '<div class="vpl-control-group">
             <label>' . get_string('filter_date_to', 'report_vpl_analytics') . ' <span title="' . get_string('tooltip_date_to', 'report_vpl_analytics') . '">(?)</span></label>
@@ -92,7 +92,6 @@ echo '</div>';
 
 echo '</div>';
 
-echo '<div id="chartWarning" style="text-align: center; font-style: italic; font-size: 13px; color: #6c757d; margin-bottom: 15px; display: none;"></div>';
 echo '<div class="vpl-canvas-container" style="position:relative;">';
 echo '<div id="zoomControls" style="position:absolute; top: 15px; right: 20px; display:flex; gap: 8px; z-index: 10; display:none;">';
 echo '<button type="button" id="btnZoomIn" style="padding: 6px 12px; background: #e9ecef; color: #212529; border: 1px solid #ced4da; border-radius: 4px; cursor: pointer; font-weight:bold;">+</button>';
@@ -125,7 +124,7 @@ echo '
     <div style="background:white; padding:20px; border-radius:5px; width:400px; box-shadow:0 4px 12px rgba(0,0,0,0.15);">
         <h3 style="margin-top:0;">' . get_string('settings_title', 'report_vpl_analytics') . '</h3>
         <p style="font-size:0.9em; color:#666;">' . get_string('settings_desc', 'report_vpl_analytics') . '</p>
-        <div style="margin-bottom:15px;">
+        <div style="margin-bottom:20px;">
             <label style="display:block; margin-bottom:5px; font-weight:bold;">' . get_string('settings_stagnant', 'report_vpl_analytics') . '</label>
             <div style="display:flex; gap:10px;">
                 <div style="flex:1;"><small>' . get_string('settings_stagnant_runs', 'report_vpl_analytics') . '</small><br><input type="number" id="settingStagnantEvals" value="15" style="width:100%;"></div>
@@ -166,9 +165,6 @@ const lang = {
     label_no_students: '" . get_string('label_no_students', 'report_vpl_analytics') . "',
     cat_graded: '" . get_string('cat_graded', 'report_vpl_analytics') . "',
     cat_not_graded: '" . get_string('cat_not_graded', 'report_vpl_analytics') . "',
-    warn_dificultad: '" . get_string('warn_dificultad', 'report_vpl_analytics') . "',
-    warn_dedicacion: '" . get_string('warn_dedicacion', 'report_vpl_analytics') . "',
-    warn_empty_dedicacion: '" . get_string('warn_empty_dedicacion', 'report_vpl_analytics') . "',
     label_runs: '" . get_string('col_runs', 'report_vpl_analytics') . "',
     label_evals: '" . get_string('col_evals', 'report_vpl_analytics') . "',
     badge_risk: '" . get_string('badge_risk', 'report_vpl_analytics') . "',
@@ -181,10 +177,8 @@ const lang = {
     label_avg_grade: '" . get_string('label_avg_grade', 'report_vpl_analytics') . "',
     label_qty: '" . get_string('label_qty', 'report_vpl_analytics') . "',
     label_grade_range: '" . get_string('label_grade_range', 'report_vpl_analytics') . "',
-    label_time_spent: '" . get_string('label_time_spent', 'report_vpl_analytics') . "',
     label_execs: '" . get_string('label_execs', 'report_vpl_analytics') . "',
     label_evals: '" . get_string('label_evals', 'report_vpl_analytics') . "',
-    label_qty_students: '" . get_string('label_qty_students', 'report_vpl_analytics') . "',
     cat_graded: '" . get_string('cat_graded', 'report_vpl_analytics') . "',
     cat_ungraded: '" . get_string('cat_ungraded', 'report_vpl_analytics') . "',
     cat_open: '" . get_string('cat_open', 'report_vpl_analytics') . "',
@@ -257,32 +251,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         rawData.submissions = expandedSubmissions;
     }
-    
-    const SESSION_THRESHOLD = 900; 
-    const BASE_TIME = 300; 
-    rawData.timeOnTask = {}; 
-    let userVplSubs = {};
-    rawData.submissions.forEach(s => {
-        let key = s.userid + '_' + s.vpl;
-        if (!userVplSubs[key]) userVplSubs[key] = [];
-        userVplSubs[key].push(s.datesubmitted);
-    });
-    Object.keys(userVplSubs).forEach(key => {
-        let times = userVplSubs[key].sort((a,b) => a - b);
-        let totalSecs = 0;
-        if (times.length > 0) {
-            totalSecs += BASE_TIME;
-            for (let i = 1; i < times.length; i++) {
-                let diff = times[i] - times[i-1];
-                if (diff <= SESSION_THRESHOLD) {
-                    totalSecs += diff;
-                } else {
-                    totalSecs += BASE_TIME;
-                }
-            }
-        }
-        rawData.timeOnTask[key] = totalSecs;
-    });
 
     const analysisModeEl = document.getElementById('analysisMode');
     const chartTypeEl = document.getElementById('chartType');
@@ -420,21 +388,16 @@ document.addEventListener('DOMContentLoaded', function() {
     [chartTypeEl, filterGroupEl, filterVplEl, compareGroup1El, compareGroup2El, compareUser1El, compareUser2El, filterDateFromEl, filterDateToEl].forEach(el => el.addEventListener('change', updateDashboard));
 
     function updateDashboard() {
-        const diffOption = Array.from(chartTypeEl.options).find(opt => opt.value === 'dificultad');
-        if (diffOption) { diffOption.disabled = false; diffOption.style.display = ''; }
-        
         const heatOption = Array.from(chartTypeEl.options).find(opt => opt.value === 'heatmap_tiempo');
         if (heatOption) { heatOption.disabled = false; heatOption.style.display = ''; }
         
         let isSpecificVpl = !isNaN(parseInt(filterVplEl.value)) && !filterVplEl.value.startsWith('cat_') && !filterVplEl.value.startsWith('sec_') && filterVplEl.value !== 'all';
-        if (analysisModeEl.value !== 'global' || isSpecificVpl) {
-            if (diffOption) { diffOption.disabled = true; diffOption.style.display = 'none'; }
-            if (chartTypeEl.value === 'dificultad') chartTypeEl.value = 'rendimiento';
-        }
         
         if (analysisModeEl.value !== 'global') {
             if (heatOption) { heatOption.disabled = true; heatOption.style.display = 'none'; }
-            if (chartTypeEl.value === 'heatmap_tiempo') chartTypeEl.value = 'rendimiento';
+            if (chartTypeEl.value === 'heatmap_tiempo') {
+                chartTypeEl.value = 'rendimiento';
+            }
         }
 
         const mode = analysisModeEl.value;
@@ -499,8 +462,8 @@ document.addEventListener('DOMContentLoaded', function() {
             let currentTotalStudents = rawData.total_students;
             
             if (groupId !== 'all') {
-                const gid = parseInt(groupId);
-                finalData = finalData.filter(s => s.user_groups && s.user_groups.includes(gid));
+                const gid = groupId;
+                finalData = finalData.filter(s => s.user_groups && s.user_groups.some(g => g == gid));
                 currentTotalStudents = groupCountMap[gid] || 0;
             }
             datasetsInfo.push({ label: 'Global', data: finalData, color: primaryColor });
@@ -516,10 +479,10 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
         } else if (mode === 'compare_groups') {
-            const gid1 = parseInt(compareGroup1El.value);
-            const gid2 = parseInt(compareGroup2El.value);
-            let d1 = baseFiltered.filter(s => s.user_groups && s.user_groups.includes(gid1));
-            let d2 = baseFiltered.filter(s => s.user_groups && s.user_groups.includes(gid2));
+            const gid1 = compareGroup1El.value;
+            const gid2 = compareGroup2El.value;
+            let d1 = baseFiltered.filter(s => s.user_groups && s.user_groups.some(g => g == gid1));
+            let d2 = baseFiltered.filter(s => s.user_groups && s.user_groups.some(g => g == gid2));
             datasetsInfo.push({ label: groupMap[gid1] || lang.label_group + ' ' + gid1, data: d1, color: primaryColor });
             datasetsInfo.push({ label: groupMap[gid2] || lang.label_group + ' ' + gid2, data: d2, color: secondaryColor });
             
@@ -531,7 +494,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (rawData.users && rawData.user_groups_map) {
                 rawData.users.forEach(uid => {
                     let uGroups = rawData.user_groups_map[uid] || [0];
-                    if (uGroups.includes(gid1) || uGroups.includes(gid2)) {
+                    if (uGroups.some(g => g == gid1) || uGroups.some(g => g == gid2)) {
                         allowedUsers.add(uid);
                     }
                 });
@@ -541,15 +504,15 @@ document.addEventListener('DOMContentLoaded', function() {
             updateKPIs(combined, combinedTotal);
             
             document.getElementById('mainTableContainer').style.display = 'block';
-            document.getElementById('tableScrollIndicator').style.display = 'block';
+            document.getElementById('tableTopControls').style.display = 'flex';
             updateTable(combined, [gid1, gid2], null);
         } else if (mode === 'compare_users') {
-            const uid1 = parseInt(compareUser1El.value);
-            const uid2 = parseInt(compareUser2El.value);
+            const uid1 = compareUser1El.value;
+            const uid2 = compareUser2El.value;
             let uName1 = rawData.user_names_map && rawData.user_names_map[uid1] ? rawData.user_names_map[uid1] : uid1;
             let uName2 = rawData.user_names_map && rawData.user_names_map[uid2] ? rawData.user_names_map[uid2] : uid2;
-            let d1 = baseFiltered.filter(s => s.userid === uid1);
-            let d2 = baseFiltered.filter(s => s.userid === uid2);
+            let d1 = baseFiltered.filter(s => s.userid == uid1);
+            let d2 = baseFiltered.filter(s => s.userid == uid2);
             datasetsInfo.push({ label: uName1, data: d1, color: primaryColor });
             datasetsInfo.push({ label: uName2, data: d2, color: secondaryColor });
             
@@ -561,7 +524,7 @@ document.addEventListener('DOMContentLoaded', function() {
             updateKPIs(combined, combinedTotal);
             
             document.getElementById('mainTableContainer').style.display = 'block';
-            document.getElementById('tableScrollIndicator').style.display = 'block';
+            document.getElementById('tableTopControls').style.display = 'flex';
             updateTable(combined, null, [uid1, uid2]);
         }
 
@@ -617,7 +580,8 @@ document.addEventListener('DOMContentLoaded', function() {
             medianStr = formatGradeStr(median);
         }
 
-        document.getElementById('kpiAvgGrade').innerText = avgStr;
+        const elAvg = document.getElementById('kpiAvgGrade');
+        if(elAvg) elAvg.innerText = avgStr;
         
         const elPass = document.getElementById('kpiPassRate');
         if(elPass) elPass.innerText = passStr;
@@ -630,9 +594,14 @@ document.addEventListener('DOMContentLoaded', function() {
         const activeCount = activeUsers.size;
         const inactiveCount = Math.max(0, totalAllowed - activeCount);
 
-        document.getElementById('kpiTotalSubs').innerText = totalSubs;
-        document.getElementById('kpiActiveUsers').innerText = activeCount + (totalAllowed ? ' / ' + totalAllowed : '');
-        document.getElementById('kpiInactiveUsers').innerText = inactiveCount;
+        const elTotalSubs = document.getElementById('kpiTotalSubs');
+        if(elTotalSubs) elTotalSubs.innerText = totalSubs;
+        
+        const elActiveUsers = document.getElementById('kpiActiveUsers');
+        if(elActiveUsers) elActiveUsers.innerText = activeCount + (totalAllowed ? ' / ' + totalAllowed : '');
+        
+        const elInactiveUsers = document.getElementById('kpiInactiveUsers');
+        if(elInactiveUsers) elInactiveUsers.innerText = inactiveCount;
     }
 
     function updateTable(subs, allowedGroupIds = null, allowedUserIds = null) {
@@ -640,10 +609,6 @@ document.addEventListener('DOMContentLoaded', function() {
         tbody.innerHTML = '';
         
         let isSpecificVpl = !isNaN(parseInt(filterVplEl.value)) && !filterVplEl.value.startsWith('cat_') && !filterVplEl.value.startsWith('sec_') && filterVplEl.value !== 'all';
-        let gradeHeader = document.querySelector('.vpl-table thead th:nth-child(4)');
-        if (gradeHeader) {
-            gradeHeader.style.display = isSpecificVpl ? '' : 'none';
-        }
 
         let studentStats = {};
         subs.forEach(s => {
@@ -690,12 +655,12 @@ document.addEventListener('DOMContentLoaded', function() {
         if (rawData.users && rawData.user_groups_map) {
             rawData.users.forEach(uid => {
                 if (allowedUserIds !== null) {
-                    if (!allowedUserIds.includes(uid)) return;
+                    if (!allowedUserIds.some(id => id == uid)) return;
                 } else {
                     let uGroups = rawData.user_groups_map[uid] || [];
                     if (uGroups.length === 0) uGroups = [0];
                     if (allowedGroupIds !== null) {
-                        let hasMatch = allowedGroupIds.some(gid => uGroups.includes(gid));
+                        let hasMatch = allowedGroupIds.some(gid => uGroups.some(g => g == gid));
                         if (!hasMatch) return;
                     }
                 }
@@ -852,9 +817,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const chartInner = document.getElementById('chartInner');
         chartInner.style.minWidth = '100%';
         const chartWarning = document.getElementById('chartWarning');
-        chartWarning.style.display = 'none';
-        chartWarning.innerText = '';
-
+        
         let totalSubs = datasetsInfo.reduce((acc, ds) => acc + ds.data.length, 0);
         if (totalSubs === 0) {
             document.getElementById('mainChart').style.display = 'block';
@@ -895,7 +858,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     let intensity = maxVal > 0 ? (val / maxVal) : 0;
                     let bg = 'rgba(0, 123, 255, ' + intensity + ')';
                     let color = intensity > 0.5 ? 'white' : (val > 0 ? '#212529' : 'transparent');
-                    let title = val + ' entregas';
+                    let title = val + ' ' + lang.label_subs.toLowerCase();
                     html += '<td style=\\'background:' + bg + '; color:' + color + '; padding:8px; border:1px solid #e9ecef; font-weight:bold; cursor:crosshair;\\' title=\\'' + title + '\\'>' + (val > 0 ? val : '') + '</td>';
                 }
                 html += '</tr>';
@@ -908,6 +871,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         document.getElementById('mainChart').style.display = 'block';
         document.getElementById('customHtmlChart').style.display = 'none';
+        document.getElementById('customHtmlChart').innerHTML = '';
 
         let zoomControls = document.getElementById('zoomControls');
         if (type === 'esfuerzo' || type === 'evolucion') zoomControls.style.display = 'flex';
@@ -1058,14 +1022,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 return {
                     label: ds.label,
                     data: dataPoints,
+                    backgroundColor: ds.color + '99',
                     borderColor: ds.color,
-                    backgroundColor: ds.color + '33',
-                    fill: true, tension: 0.1
+                    borderWidth: 1
                 };
             });
 
             currentChart = new Chart(ctx, {
-                type: 'line',
+                type: 'bar',
                 data: { datasets: chartDatasets },
                 options: {
                     responsive: true,
@@ -1074,117 +1038,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
 
-        } else if (type === 'dificultad') {
-            let vplSets = datasetsInfo.map(ds => {
-                let finalGrades = {};
-                let vplNames = {};
-                
-                ds.data.forEach(s => {
-                    if (s.grade === null) return;
-                    vplNames[s.vpl] = s.vpl_name;
-                    let key = s.userid + '_' + s.vpl;
-                    if (finalGrades[key] === undefined || s.datesubmitted > finalGrades[key].date) {
-                        finalGrades[key] = { vpl: s.vpl, grade: s.grade, date: s.datesubmitted };
-                    }
-                });
-
-                let vplStats = {};
-                Object.values(finalGrades).forEach(fg => {
-                    if (!vplStats[fg.vpl]) vplStats[fg.vpl] = { name: vplNames[fg.vpl], sumGrade: 0, countGrade: 0 };
-                    vplStats[fg.vpl].sumGrade += fg.grade;
-                    vplStats[fg.vpl].countGrade++;
-                });
-                return vplStats;
-            });
-
-            let allVplsMap = {};
-            vplSets.forEach(vs => Object.keys(vs).forEach(vid => allVplsMap[vid] = vs[vid].name));
-            
-            let vplArray = Object.keys(allVplsMap).map(vid => {
-                let sum = 0, count = 0;
-                vplSets.forEach(vs => { if (vs[vid]) { sum += vs[vid].sumGrade; count += vs[vid].countGrade; } });
-                return { id: vid, name: allVplsMap[vid], avgSort: count > 0 ? (sum/count) : 0 };
-            });
-            vplArray.sort((a,b) => a.id - b.id);
-            commonLabels = vplArray.map(v => v.name);
-
-            chartDatasets = datasetsInfo.map((ds, i) => {
-                let dataArray = vplArray.map(v => {
-                    let st = vplSets[i][v.id];
-                    return st && st.countGrade > 0 ? parseFloat((st.sumGrade / st.countGrade).toFixed(2)) : 0;
-                });
-                return {
-                    label: lang.label_avg_grade + ' (' + ds.label + ')',
-                    data: dataArray,
-                    backgroundColor: ds.color
-                };
-            });
-
-            if (commonLabels.length > 10) {
-                chartInner.style.minWidth = (commonLabels.length * 60) + 'px';
-            }
-
-            chartWarning.innerText = lang.warn_dificultad;
-            chartWarning.style.display = 'block';
-
-            currentChart = new Chart(ctx, {
-                type: 'bar',
-                data: { labels: commonLabels, datasets: chartDatasets },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { 
-                        legend: { display: false },
-                        zoom: zoomOptions 
-                    },
-                    scales: { y: { beginAtZero: true, max: 10, title: {display:true, text:lang.label_avg_grade} } }
-                }
-            });
-        } else if (type === 'dedicacion') {
-            if (filterVplEl.value === 'all') {
-                currentChart = new Chart(ctx, {
-                    type: 'bar',
-                    data: { labels: [], datasets: [] },
-                    options: {
-                        responsive: true,
-                        plugins: { 
-                            title: { display: true, text: lang.warn_empty_dedicacion, font: {size: 16}, padding: {top: 50} }
-                        },
-                        scales: { x: { display: false }, y: { display: false } }
-                    }
-                });
-                return;
-            }
-
-            commonLabels = ['0-1h', '1-2h', '2-3h', '3-4h', '4-5h', '5-6h', '6-7h', '7-8h', '8-9h', '9-10h', '>10h'];
-            chartDatasets = datasetsInfo.map(ds => {
-                let binCounts = new Array(11).fill(0);
-                let userVpls = new Set();
-                ds.data.forEach(s => userVpls.add(s.userid + '_' + s.vpl));
-                let userTotalTime = {};
-                userVpls.forEach(key => {
-                    let parts = key.split('_'); let uid = parts[0];
-                    if (!userTotalTime[uid]) userTotalTime[uid] = 0;
-                    userTotalTime[uid] += (rawData.timeOnTask[key] || 0);
-                });
-                Object.values(userTotalTime).forEach(secs => {
-                    let hours = secs / 3600;
-                    if (hours < 1) binCounts[0]++; else if (hours < 2) binCounts[1]++; else if (hours < 3) binCounts[2]++; else if (hours < 4) binCounts[3]++; else if (hours < 5) binCounts[4]++; else if (hours < 6) binCounts[5]++; else if (hours < 7) binCounts[6]++; else if (hours < 8) binCounts[7]++; else if (hours < 9) binCounts[8]++; else if (hours < 10) binCounts[9]++; else binCounts[10]++;
-                });
-                return { label: lang.label_students + ' (' + ds.label + ')', data: binCounts, backgroundColor: ds.color };
-            });
-            chartWarning.innerText = lang.warn_dedicacion;
-            chartWarning.style.display = 'block';
-
-            currentChart = new Chart(ctx, {
-                type: 'bar',
-                data: { labels: commonLabels, datasets: chartDatasets },
-                options: {
-                    responsive: true,
-                    plugins: { legend: { display: false }, zoom: zoomOptions },
-                    scales: { y: { beginAtZero: true, title: {display:true, text:lang.label_qty_students} }, x: { title: {display:true, text:lang.label_time_spent} } }
-                }
-            });
         }
     }
 
