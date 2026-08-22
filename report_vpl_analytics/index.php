@@ -132,8 +132,12 @@ echo '
             </div>
         </div>
         <div style="margin-bottom:20px;">
-            <label style="display:block; margin-bottom:5px; font-weight:bold;">' . get_string('settings_procrastinate', 'report_vpl_analytics') . '</label>
-            <div><small>' . get_string('settings_procrastinate_hours', 'report_vpl_analytics') . '</small><br><input type="number" id="settingProcrastinateHours" value="24" style="width:100%;"></div>
+            <label style="display:block; margin-bottom:5px; font-weight:bold;">' . get_string('settings_proc_init', 'report_vpl_analytics') . '</label>
+            <div><small>' . get_string('settings_proc_init_hours', 'report_vpl_analytics') . '</small><br><input type="number" id="settingProcInitHours" value="48" style="width:100%;"></div>
+        </div>
+        <div style="margin-bottom:20px;">
+            <label style="display:block; margin-bottom:5px; font-weight:bold;">' . get_string('settings_proc_final', 'report_vpl_analytics') . '</label>
+            <div><small>' . get_string('settings_proc_final_hours', 'report_vpl_analytics') . '</small><br><input type="number" id="settingProcFinalHours" value="2" style="width:100%;"></div>
         </div>
         <div style="margin-bottom:20px;">
             <label style="display:block; margin-bottom:5px; font-weight:bold;">' . get_string('settings_grade_scale', 'report_vpl_analytics') . '</label>
@@ -169,8 +173,14 @@ const lang = {
     label_evals: '" . get_string('col_evals', 'report_vpl_analytics') . "',
     badge_risk: '" . get_string('badge_risk', 'report_vpl_analytics') . "',
     badge_risk_desc: '" . get_string('badge_risk_desc', 'report_vpl_analytics') . "',
-    badge_procrastinate: '" . get_string('badge_procrastinate', 'report_vpl_analytics') . "',
-    badge_procrastinate_desc: '" . get_string('badge_procrastinate_desc', 'report_vpl_analytics') . "',
+    settings_proc_init: '" . addslashes(get_string('settings_proc_init', 'report_vpl_analytics')) . "',
+    settings_proc_init_hours: '" . addslashes(get_string('settings_proc_init_hours', 'report_vpl_analytics')) . "',
+    settings_proc_final: '" . addslashes(get_string('settings_proc_final', 'report_vpl_analytics')) . "',
+    settings_proc_final_hours: '" . addslashes(get_string('settings_proc_final_hours', 'report_vpl_analytics')) . "',
+    badge_proc_init: '" . addslashes(get_string('badge_proc_init', 'report_vpl_analytics')) . "',
+    badge_proc_init_desc: '" . addslashes(get_string('badge_proc_init_desc', 'report_vpl_analytics')) . "',
+    badge_proc_final: '" . addslashes(get_string('badge_proc_final', 'report_vpl_analytics')) . "',
+    badge_proc_final_desc: '" . addslashes(get_string('badge_proc_final_desc', 'report_vpl_analytics')) . "',
     label_no_data: '" . get_string('label_no_data', 'report_vpl_analytics') . "',
     label_num_subs: '" . get_string('label_num_subs', 'report_vpl_analytics') . "',
     label_students: '" . get_string('label_students', 'report_vpl_analytics') . "',
@@ -765,10 +775,12 @@ document.addEventListener('DOMContentLoaded', function() {
             let totalEvals = 0;
             let totalDebugs = 0;
             let isStagnant = false;
-            let isProcrastinator = false;
+            let isProcInit = false;
+            let isProcFinal = false;
             let stagEvals = parseInt(document.getElementById('settingStagnantEvals').value) || 15;
             let stagGrade = getNormalizedStagnantGrade();
-            let procHours = parseFloat(document.getElementById('settingProcrastinateHours').value) || 24;
+            let procInitHours = parseFloat(document.getElementById('settingProcInitHours').value) || 48;
+            let procFinalHours = parseFloat(document.getElementById('settingProcFinalHours').value) || 2;
             
             if (st.vplMaxEffort) {
                 Object.keys(st.vplMaxEffort).forEach(vplId => {
@@ -782,8 +794,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                     
                     let vDue = vplDict[vplId] ? vplDict[vplId].duedate : 0;
-                    if (vDue > 0 && v.firstSub >= (vDue - (procHours * 3600))) {
-                        isProcrastinator = true;
+                    if (vDue > 0) {
+                        if (v.firstSub >= (vDue - (procInitHours * 3600))) isProcInit = true;
+                        if (v.lastGradeDate >= (vDue - (procFinalHours * 3600))) isProcFinal = true;
                     }
                 });
             }
@@ -791,8 +804,9 @@ document.addEventListener('DOMContentLoaded', function() {
             let uName = rawData.user_names_map && rawData.user_names_map[uid] ? rawData.user_names_map[uid] : uid;
             
             let badges = '';
-            if (isStagnant) badges += ' <span style=\\'background:#dc3545; color:white; padding:2px 6px; border-radius:10px; font-size:0.75em;\\' title=\\'' + lang.badge_risk_desc + '\\'>' + lang.badge_risk + '</span>';
-            if (isProcrastinator) badges += ' <span style=\\'background:#ffc107; color:black; padding:2px 6px; border-radius:10px; font-size:0.75em;\\' title=\\'' + lang.badge_procrastinate_desc + '\\'>' + lang.badge_procrastinate + '</span>';
+            if (isStagnant) badges += ' <span style=\'background:#dc3545; color:white; padding:2px 6px; border-radius:10px; font-size:0.75em;\' title=\'' + lang.badge_risk_desc + '\'>' + lang.badge_risk + '</span>';
+            if (isProcInit) badges += ' <span style=\'background:#ffc107; color:black; padding:2px 6px; border-radius:10px; font-size:0.75em;\' title=\'' + lang.badge_proc_init_desc + '\'>' + lang.badge_proc_init + '</span>';
+            if (isProcFinal) badges += ' <span style=\'background:#fd7e14; color:white; padding:2px 6px; border-radius:10px; font-size:0.75em;\' title=\'' + lang.badge_proc_final_desc + '\'>' + lang.badge_proc_final + '</span>';
             
             let tr = document.createElement('tr');
             let gradeTd = isSpecificVpl ? `<td>\${gradeStr}</td>` : '';

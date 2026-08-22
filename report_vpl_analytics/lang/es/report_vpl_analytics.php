@@ -43,7 +43,7 @@ $string['col_runs'] = 'Ejecuciones';
 $string['col_debugs'] = 'Depuraciones';
 $string['col_evals'] = 'Evals. Auto.';
 
-// Nuevas claves para el Bloque 1
+
 $string['filter_date_from'] = 'Fecha Desde';
 $string['filter_date_to'] = 'Fecha Hasta';
 $string['kpi_pass_rate'] = 'Tasa Aprobado';
@@ -55,8 +55,10 @@ $string['settings_desc'] = 'Configura la escala de notas y los umbrales para det
 $string['settings_stagnant'] = '[Riesgo] Estancamiento';
 $string['settings_stagnant_runs'] = 'Mínimo evaluaciones:';
 $string['settings_stagnant_grade'] = 'Nota máxima:';
-$string['settings_procrastinate'] = '[Procrastina] Entrega tardía';
-$string['settings_procrastinate_hours'] = 'Horas antes del cierre:';
+$string['settings_proc_init'] = '[Procrastina] Empezó tarde';
+$string['settings_proc_init_hours'] = 'Horas (inicio) antes del cierre:';
+$string['settings_proc_final'] = '[Procrastina] Apuró entrega';
+$string['settings_proc_final_hours'] = 'Horas (fin) antes del cierre:';
 $string['settings_cancel'] = 'Cancelar';
 $string['btn_export_csv'] = 'Exportar a CSV';
 $string['settings_save'] = 'Guardar';
@@ -72,8 +74,10 @@ $string['tooltip_active_users'] = 'Alumnos filtrados que han realizado al menos 
 $string['tooltip_inactive_users'] = 'Alumnos filtrados que no tienen ninguna entrega registrada';
 $string['badge_risk'] = '[Riesgo]';
 $string['badge_risk_desc'] = 'Demasiadas evaluaciones con nota baja';
-$string['badge_procrastinate'] = '[Procrastina]';
-$string['badge_procrastinate_desc'] = 'Primera entrega muy cerca del cierre';
+$string['badge_proc_init'] = '[Proc. Inicial]';
+$string['badge_proc_init_desc'] = 'Primera entrega muy cerca del cierre';
+$string['badge_proc_final'] = '[Proc. Final]';
+$string['badge_proc_final_desc'] = 'Última entrega muy cerca del cierre';
 
 $string['label_student'] = 'Alumno';
 $string['label_group'] = 'Grupo';
