@@ -718,11 +718,14 @@ document.addEventListener('DOMContentLoaded', function() {
             sortedUsers.forEach(uid => {
                 let st = studentStats[uid];
                 let uName = rawData.user_names_map && rawData.user_names_map[uid] ? rawData.user_names_map[uid] : uid;
+                let uLink = '<a href=\"../../user/view.php?id=' + uid + '&course=$courseid\" target=\"_blank\" style=\"text-decoration:none; color:#007bff; font-weight:bold;\">' + uName + '</a>';
                 let isStagnant = false;
-                let isProcrastinator = false;
-                let stagEvals = parseInt(document.getElementById('settingStagnantEvals').value);
+                let isProcInit = false;
+                let isProcFinal = false;
+                let stagEvals = parseInt(document.getElementById('settingStagnantEvals').value) || 15;
                 let stagGrade = getNormalizedStagnantGrade();
-                let procHours = parseInt(document.getElementById('settingProcrastinateHours').value);
+                let procInitHours = parseFloat(document.getElementById('settingProcInitHours').value) || 48;
+                let procFinalHours = parseFloat(document.getElementById('settingProcFinalHours').value) || 2;
                 
                 Object.keys(st.vplMaxEffort).forEach(vplId => {
                     let v = st.vplMaxEffort[vplId];
@@ -730,17 +733,19 @@ document.addEventListener('DOMContentLoaded', function() {
                         isStagnant = true;
                     }
                     let vDue = vplDict[vplId] ? vplDict[vplId].duedate : 0;
-                    if (vDue > 0 && v.firstSub >= (vDue - (procHours * 3600))) {
-                        isProcrastinator = true;
+                    if (vDue > 0) {
+                        if (v.firstSub >= (vDue - (procInitHours * 3600))) isProcInit = true;
+                        if (v.lastGradeDate >= (vDue - (procFinalHours * 3600))) isProcFinal = true;
                     }
                 });
                 
                 let badges = '';
                 if (isStagnant) badges += ' <span style=\\'background:#dc3545; color:white; padding:2px 6px; border-radius:10px; font-size:0.75em;\\' title=\\'' + lang.badge_risk_desc + '\\'>' + lang.badge_risk + '</span>';
-                if (isProcrastinator) badges += ' <span style=\\'background:#ffc107; color:black; padding:2px 6px; border-radius:10px; font-size:0.75em;\\' title=\\'' + lang.badge_procrastinate_desc + '\\'>' + lang.badge_procrastinate + '</span>';
+                if (isProcInit) badges += ' <span style=\\'background:#ffc107; color:black; padding:2px 6px; border-radius:10px; font-size:0.75em;\\' title=\\'' + lang.badge_proc_init_desc + '\\'>' + lang.badge_proc_init + '</span>';
+                if (isProcFinal) badges += ' <span style=\\'background:#fd7e14; color:white; padding:2px 6px; border-radius:10px; font-size:0.75em;\\' title=\\'' + lang.badge_proc_final_desc + '\\'>' + lang.badge_proc_final + '</span>';
                 
                 let tr = document.createElement('tr');
-                let rowHtml = '<td>' + uName + badges + '</td><td>' + st.group + '</td>';
+                let rowHtml = '<td>' + uLink + badges + '</td><td>' + st.group + '</td>';
                 
                 vplList.forEach(v => {
                     let vEffort = st.vplMaxEffort[v.id];
@@ -802,6 +807,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             let uName = rawData.user_names_map && rawData.user_names_map[uid] ? rawData.user_names_map[uid] : uid;
+            let uLink = '<a href=\"../../user/view.php?id=' + uid + '&course=$courseid\" target=\"_blank\" style=\"text-decoration:none; color:#007bff; font-weight:bold;\">' + uName + '</a>';
             
             let badges = '';
             if (isStagnant) badges += ' <span style=\'background:#dc3545; color:white; padding:2px 6px; border-radius:10px; font-size:0.75em;\' title=\'' + lang.badge_risk_desc + '\'>' + lang.badge_risk + '</span>';
@@ -811,7 +817,7 @@ document.addEventListener('DOMContentLoaded', function() {
             let tr = document.createElement('tr');
             let gradeTd = isSpecificVpl ? `<td>\${gradeStr}</td>` : '';
             tr.innerHTML = `
-                <td>\${uName} \${badges}</td>
+                <td>\${uLink} \${badges}</td>
                 <td>\${st.group}</td>
                 <td>\${st.subs}</td>
                 \${gradeTd}

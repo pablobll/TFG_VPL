@@ -129,8 +129,6 @@ class data_manager {
                 $u_groups = [0];
             }
 
-
-
             $grade = null;
             if ($sub->grade !== null && $sub->grade !== '') {
                 $raw_grade = (float)$sub->grade;

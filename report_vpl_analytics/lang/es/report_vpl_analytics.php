@@ -42,8 +42,6 @@ $string['col_last_sub'] = 'Última Entrega';
 $string['col_runs'] = 'Ejecuciones';
 $string['col_debugs'] = 'Depuraciones';
 $string['col_evals'] = 'Evals. Auto.';
-
-
 $string['filter_date_from'] = 'Fecha Desde';
 $string['filter_date_to'] = 'Fecha Hasta';
 $string['kpi_pass_rate'] = 'Tasa Aprobado';
@@ -78,7 +76,6 @@ $string['badge_proc_init'] = '[Proc. Inicial]';
 $string['badge_proc_init_desc'] = 'Primera entrega muy cerca del cierre';
 $string['badge_proc_final'] = '[Proc. Final]';
 $string['badge_proc_final_desc'] = 'Última entrega muy cerca del cierre';
-
 $string['label_student'] = 'Alumno';
 $string['label_group'] = 'Grupo';
 $string['label_no_group'] = 'Sin Grupo';
