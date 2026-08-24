@@ -37,11 +37,15 @@ class data_manager {
         foreach ($vpls as $vpl) {
             $section_name = 'General';
             $is_cm_group = false;
+            $course_order = 99999;
+            $cm_pos = 0;
             foreach ($modinfo->cms as $cm) {
+                $cm_pos++;
                 if ($cm->modname === 'vpl' && $cm->instance == $vpl->id) {
                     $sectioninfo = $modinfo->get_section_info($cm->sectionnum);
                     $section_name = $sectioninfo->name ?: get_string('section') . ' ' . $cm->sectionnum;
                     $is_cm_group = ($cm->groupmode > 0);
+                    $course_order = $cm_pos;
                     break;
                 }
             }
@@ -57,7 +61,9 @@ class data_manager {
                 'graded' => $is_graded,
                 'closed' => $is_closed,
                 'is_group' => $is_group,
-                'duedate' => (int)$vpl->duedate
+                'duedate' => (int)$vpl->duedate,
+                'course_order' => $course_order
+
             ];
         }
         

@@ -380,7 +380,7 @@ document.addEventListener('DOMContentLoaded', function() {
         panelCompareGroups.style.display = 'none';
         panelCompareUsers.style.display = 'none';
         
-        if (analysisModeEl.value === 'global') {
+        if (analysisModeEl.value === 'global' || analysisModeEl.value === 'matriz') {
             panelGlobal.style.display = 'flex';
         } else {
             filterVplEl.value = 'all';
@@ -457,8 +457,10 @@ document.addEventListener('DOMContentLoaded', function() {
             if (groupId !== 'all') {
                 const gid = parseInt(groupId);
                 finalData = finalData.filter(s => s.user_groups && s.user_groups.includes(gid));
+                updateTable(finalData, [gid], null);
+            } else {
+                updateTable(finalData, null, null);
             }
-            updateTable(finalData, null, null);
             return;
         } else {
             document.querySelector('.vpl-canvas-container').style.display = 'block';
@@ -705,7 +707,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (analysisModeEl.value === 'matriz') {
             let activeVpls = new Set();
             subs.forEach(s => activeVpls.add(s.vpl));
-            let vplList = Array.from(activeVpls).map(id => vplDict[id]).filter(v => v).sort((a,b) => a.duedate - b.duedate);
+            let vplList = Array.from(activeVpls).map(id => vplDict[id]).filter(v => v).sort((a,b) => (a.course_order || 99999) - (b.course_order || 99999));
             
             let theadHtml = '<tr><th>' + lang.col_student + '</th><th>' + lang.col_group + '</th>';
             vplList.forEach(v => {
