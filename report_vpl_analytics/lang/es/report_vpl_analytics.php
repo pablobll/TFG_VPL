@@ -91,3 +91,4 @@ $string['settings_grade_scale'] = 'Escala de Notas';
 $string['scale_base10'] = 'Base 10 (0-10)';
 $string['scale_base100'] = 'Base 100 (0-100)';
 $string['scale_letters'] = 'Letras (A-F)';
+$string['none_selected'] = '< Sin seleccionar >';

@@ -81,13 +81,13 @@ echo '<div class="vpl-control-group">
 echo '</div>';
 
 echo '<div id="panelCompareGroups" style="display:none; gap:20px; width:100%;">';
-echo '<div class="vpl-control-group"><label>' . get_string('group_1', 'report_vpl_analytics') . '</label><select id="compareGroup1"></select></div>';
-echo '<div class="vpl-control-group"><label>' . get_string('group_2', 'report_vpl_analytics') . '</label><select id="compareGroup2"></select></div>';
+echo '<div class="vpl-control-group"><label>' . get_string('group_1', 'report_vpl_analytics') . '</label><select id="compareGroup1"><option value="none">' . get_string('none_selected', 'report_vpl_analytics') . '</option></select></div>';
+echo '<div class="vpl-control-group"><label>' . get_string('group_2', 'report_vpl_analytics') . '</label><select id="compareGroup2"><option value="none">' . get_string('none_selected', 'report_vpl_analytics') . '</option></select></div>';
 echo '</div>';
 
 echo '<div id="panelCompareUsers" style="display:none; gap:20px; width:100%;">';
-echo '<div class="vpl-control-group"><label>' . get_string('user_1', 'report_vpl_analytics') . '</label><select id="compareUser1"></select></div>';
-echo '<div class="vpl-control-group"><label>' . get_string('user_2', 'report_vpl_analytics') . '</label><select id="compareUser2"></select></div>';
+echo '<div class="vpl-control-group"><label>' . get_string('user_1', 'report_vpl_analytics') . '</label><select id="compareUser1"><option value="none">' . get_string('none_selected', 'report_vpl_analytics') . '</option></select></div>';
+echo '<div class="vpl-control-group"><label>' . get_string('user_2', 'report_vpl_analytics') . '</label><select id="compareUser2"><option value="none">' . get_string('none_selected', 'report_vpl_analytics') . '</option></select></div>';
 echo '</div>';
 
 echo '</div>';
@@ -493,51 +493,88 @@ document.addEventListener('DOMContentLoaded', function() {
         } else if (mode === 'compare_groups') {
             const gid1 = compareGroup1El.value;
             const gid2 = compareGroup2El.value;
-            let d1 = baseFiltered.filter(s => s.user_groups && s.user_groups.some(g => g == gid1));
-            let d2 = baseFiltered.filter(s => s.user_groups && s.user_groups.some(g => g == gid2));
-            datasetsInfo.push({ label: groupMap[gid1] || lang.label_group + ' ' + gid1, data: d1, color: primaryColor });
-            datasetsInfo.push({ label: groupMap[gid2] || lang.label_group + ' ' + gid2, data: d2, color: secondaryColor });
+            if (gid1 === 'none' && gid2 === 'none') {
+                document.getElementById('mainTableContainer').style.display = 'none';
+                document.getElementById('tableTopControls').style.display = 'none';
+                document.querySelector('.vpl-canvas-container').style.display = 'none';
+                document.querySelector('.vpl-kpi-container').style.display = 'none';
+                return;
+            }
+            
+            let combined = [];
+            let allowedGroups = [];
+            
+            if (gid1 !== 'none') {
+                let d1 = baseFiltered.filter(s => s.user_groups && s.user_groups.some(g => g == gid1));
+                datasetsInfo.push({ label: groupMap[gid1] || lang.label_group + ' ' + gid1, data: d1, color: primaryColor });
+                combined.push(...d1);
+                allowedGroups.push(gid1);
+            }
+            if (gid2 !== 'none') {
+                let d2 = baseFiltered.filter(s => s.user_groups && s.user_groups.some(g => g == gid2));
+                datasetsInfo.push({ label: groupMap[gid2] || lang.label_group + ' ' + gid2, data: d2, color: secondaryColor });
+                combined.push(...d2);
+                allowedGroups.push(gid2);
+            }
             
             let combinedMap = new Map();
-            [...d1, ...d2].forEach(s => combinedMap.set(s.id, s));
-            let combined = Array.from(combinedMap.values());
+            combined.forEach(s => combinedMap.set(s.id, s));
+            combined = Array.from(combinedMap.values());
             
             let allowedUsers = new Set();
             if (rawData.users && rawData.user_groups_map) {
                 rawData.users.forEach(uid => {
                     let uGroups = rawData.user_groups_map[uid] || [0];
-                    if (uGroups.some(g => g == gid1) || uGroups.some(g => g == gid2)) {
+                    if (allowedGroups.some(gid => uGroups.some(g => g == gid))) {
                         allowedUsers.add(uid);
                     }
                 });
             }
-            let combinedTotal = allowedUsers.size > 0 ? allowedUsers.size : (groupCountMap[gid1] || 0) + (groupCountMap[gid2] || 0);
+            let combinedTotal = allowedUsers.size > 0 ? allowedUsers.size : allowedGroups.reduce((acc, gid) => acc + (groupCountMap[gid] || 0), 0);
             
             updateKPIs(combined, combinedTotal);
             
             document.getElementById('mainTableContainer').style.display = 'block';
             document.getElementById('tableTopControls').style.display = 'flex';
-            updateTable(combined, [gid1, gid2], null);
+            updateTable(combined, allowedGroups, null);
         } else if (mode === 'compare_users') {
             const uid1 = compareUser1El.value;
             const uid2 = compareUser2El.value;
-            let uName1 = rawData.user_names_map && rawData.user_names_map[uid1] ? rawData.user_names_map[uid1] : uid1;
-            let uName2 = rawData.user_names_map && rawData.user_names_map[uid2] ? rawData.user_names_map[uid2] : uid2;
-            let d1 = baseFiltered.filter(s => s.userid == uid1);
-            let d2 = baseFiltered.filter(s => s.userid == uid2);
-            datasetsInfo.push({ label: uName1, data: d1, color: primaryColor });
-            datasetsInfo.push({ label: uName2, data: d2, color: secondaryColor });
+            if (uid1 === 'none' && uid2 === 'none') {
+                document.getElementById('mainTableContainer').style.display = 'none';
+                document.getElementById('tableTopControls').style.display = 'none';
+                document.querySelector('.vpl-canvas-container').style.display = 'none';
+                document.querySelector('.vpl-kpi-container').style.display = 'none';
+                return;
+            }
+            let combined = [];
+            let allowedUsersList = [];
+            
+            if (uid1 !== 'none') {
+                let uName1 = rawData.user_names_map && rawData.user_names_map[uid1] ? rawData.user_names_map[uid1] : uid1;
+                let d1 = baseFiltered.filter(s => s.userid == uid1);
+                datasetsInfo.push({ label: uName1, data: d1, color: primaryColor });
+                combined.push(...d1);
+                allowedUsersList.push(uid1);
+            }
+            if (uid2 !== 'none') {
+                let uName2 = rawData.user_names_map && rawData.user_names_map[uid2] ? rawData.user_names_map[uid2] : uid2;
+                let d2 = baseFiltered.filter(s => s.userid == uid2);
+                datasetsInfo.push({ label: uName2, data: d2, color: secondaryColor });
+                combined.push(...d2);
+                allowedUsersList.push(uid2);
+            }
             
             let combinedMap = new Map();
-            [...d1, ...d2].forEach(s => combinedMap.set(s.id, s));
-            let combined = Array.from(combinedMap.values());
+            combined.forEach(s => combinedMap.set(s.id, s));
+            combined = Array.from(combinedMap.values());
             
-            let combinedTotal = uid1 === uid2 ? 1 : 2;
+            let combinedTotal = allowedUsersList.length > 0 ? new Set(allowedUsersList).size : 0;
             updateKPIs(combined, combinedTotal);
             
             document.getElementById('mainTableContainer').style.display = 'block';
             document.getElementById('tableTopControls').style.display = 'flex';
-            updateTable(combined, null, [uid1, uid2]);
+            updateTable(combined, null, allowedUsersList);
         }
 
         renderChart(type, datasetsInfo);
