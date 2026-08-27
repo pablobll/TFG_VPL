@@ -687,13 +687,14 @@ document.addEventListener('DOMContentLoaded', function() {
             if (s.datesubmitted > st.lastSub) st.lastSub = s.datesubmitted;
             
             if (!st.vplMaxEffort[s.vpl]) {
-                st.vplMaxEffort[s.vpl] = { runs: 0, evals: 0, debugs: 0, firstSub: s.datesubmitted, finalGrade: null, lastGradeDate: 0 };
+                st.vplMaxEffort[s.vpl] = { runs: 0, evals: 0, debugs: 0, firstSub: s.datesubmitted, finalGrade: null, lastSub: s.datesubmitted };
             }
             if (s.datesubmitted < st.vplMaxEffort[s.vpl].firstSub) st.vplMaxEffort[s.vpl].firstSub = s.datesubmitted;
+            if (s.datesubmitted > st.vplMaxEffort[s.vpl].lastSub) st.vplMaxEffort[s.vpl].lastSub = s.datesubmitted;
             if (s.grade !== null) {
-                if (st.vplMaxEffort[s.vpl].finalGrade === null || s.datesubmitted > st.vplMaxEffort[s.vpl].lastGradeDate) {
+                if (st.vplMaxEffort[s.vpl].finalGrade === null || s.datesubmitted > st.vplMaxEffort[s.vpl].lastSub) {
                     st.vplMaxEffort[s.vpl].finalGrade = s.grade;
-                    st.vplMaxEffort[s.vpl].lastGradeDate = s.datesubmitted;
+                    st.vplMaxEffort[s.vpl].lastSub = s.datesubmitted;
                 }
             }
             if (s.run_count > st.vplMaxEffort[s.vpl].runs) st.vplMaxEffort[s.vpl].runs = s.run_count;
@@ -840,7 +841,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     let vDue = vplDict[vplId] ? vplDict[vplId].duedate : 0;
                     if (vDue > 0) {
                         if (v.firstSub >= (vDue - (procInitHours * 3600))) isProcInit = true;
-                        if (v.lastGradeDate >= (vDue - (procFinalHours * 3600))) isProcFinal = true;
+                        if (v.lastSub >= (vDue - (procFinalHours * 3600))) isProcFinal = true;
                     }
                 });
             }
