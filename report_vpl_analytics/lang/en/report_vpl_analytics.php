@@ -94,3 +94,4 @@ $string['scale_base10'] = 'Base 10 (0-10)';
 $string['scale_base100'] = 'Base 100 (0-100)';
 $string['scale_letters'] = 'Letters (A-F)';
 $string['none_selected'] = '< None selected >';
+$string['btn_export_csv'] = 'Export to CSV';

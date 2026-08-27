@@ -107,7 +107,7 @@ echo '</div>';
 echo '</div>';
 
 echo '<div id="tableTopControls" style="display: none; justify-content: space-between; align-items: flex-end; margin-top: 20px; margin-bottom: 10px;">';
-echo '  <div style="flex:1;"><input type="text" id="tableSearch" placeholder="' . get_string('search_student', 'report_vpl_analytics') . '" style="width:100%; max-width:300px; padding:6px 10px; border:1px solid #ced4da; border-radius:4px; font-size:14px;" autocomplete="off"></div>';
+echo '  <div style="flex:1; display:flex; gap:10px;"><input type="text" id="tableSearch" placeholder="' . get_string('search_student', 'report_vpl_analytics') . '" style="width:100%; max-width:300px; padding:6px 10px; border:1px solid #ced4da; border-radius:4px; font-size:14px;" autocomplete="off"><button id="btnExportCSV" class="btn btn-outline-secondary btn-sm">' . get_string('btn_export_csv', 'report_vpl_analytics') . '</button></div>';
 echo '  <div style="text-align: right; font-size: 0.85em; color: #6c757d;"><i>' . get_string('scroll_indicator', 'report_vpl_analytics') . '</i></div>';
 echo '</div>';
 echo '<div class="vpl-table-container" id="mainTableContainer" style="display: none; margin-top: 5px;">';
@@ -1110,7 +1110,30 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     });
-
+    document.getElementById('btnExportCSV').addEventListener('click', function() {
+        let csv = [];
+        let rows = document.querySelectorAll('.vpl-table tr');
+        
+        for (let i = 0; i < rows.length; i++) {
+            let row = [], cols = rows[i].querySelectorAll('td, th');
+            if (i > 0 && rows[i].style.display === 'none') continue;
+            
+            for (let j = 0; j < cols.length; j++) {
+                let data = cols[j].innerText.replace(/(\\r\\n|\\n|\\r)/gm, ' ').replace(/\"/g, '\"\"');
+                row.push('\"' + data + '\"');
+            }
+            csv.push(row.join(','));
+        }
+        
+        let csvFile = new Blob([csv.join('\\n')], {type: 'text/csv'});
+        let downloadLink = document.createElement('a');
+        downloadLink.download = 'vpl_analytics_export.csv';
+        downloadLink.href = window.URL.createObjectURL(csvFile);
+        downloadLink.style.display = 'none';
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        document.body.removeChild(downloadLink);
+    });
     updateDashboard();
 });
 </script>
