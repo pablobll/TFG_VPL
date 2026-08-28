@@ -450,6 +450,7 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('tableTopControls').style.display = 'flex';
             document.getElementById('mainTableContainer').style.display = 'block';
             document.querySelector('.vpl-kpi-container').style.display = 'none';
+            document.getElementById('btnExportCSV').style.display = 'none';
             if (chartTypeEl.parentElement) chartTypeEl.parentElement.style.display = 'none';
             
             const groupId = filterGroupEl.value;
@@ -465,6 +466,7 @@ document.addEventListener('DOMContentLoaded', function() {
         } else {
             document.querySelector('.vpl-canvas-container').style.display = 'block';
             document.querySelector('.vpl-kpi-container').style.display = 'flex';
+            document.getElementById('btnExportCSV').style.display = '';
             if (chartTypeEl.parentElement) chartTypeEl.parentElement.style.display = 'block';
         }
 
