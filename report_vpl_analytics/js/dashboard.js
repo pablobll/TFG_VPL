@@ -8,6 +8,16 @@ document.addEventListener('DOMContentLoaded', function() {
         return document.getElementById('settingGradeScale').value || '10';
     }
 
+    function escapeHTML(str) {
+        if (!str) return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
     function formatGradeStr(normalizedGrade) {
         if (normalizedGrade === null || isNaN(normalizedGrade)) return '--';
         let scale = getSelectedScale();
@@ -390,7 +400,10 @@ document.addEventListener('DOMContentLoaded', function() {
         let totalAllowed = totalStudentsFallback !== undefined ? totalStudentsFallback : (rawData.total_students || 0);
         
         if (subs.length === 0) {
-            document.getElementById('kpiAvgGrade').innerText = '0.00';
+            document.getElementById('kpiAvgGrade').innerText = '--';
+            if (document.getElementById('kpiPassRate')) document.getElementById('kpiPassRate').innerText = '--';
+            if (document.getElementById('kpiExcRate')) document.getElementById('kpiExcRate').innerText = '--';
+            if (document.getElementById('kpiMedian')) document.getElementById('kpiMedian').innerText = '--';
             document.getElementById('kpiTotalSubs').innerText = '0';
             document.getElementById('kpiActiveUsers').innerText = '0';
             document.getElementById('kpiInactiveUsers').innerText = totalAllowed;
@@ -464,6 +477,45 @@ document.addEventListener('DOMContentLoaded', function() {
         tbody.innerHTML = '';
         
         let isSpecificVpl = !isNaN(parseInt(filterVplEl.value)) && !filterVplEl.value.startsWith('cat_') && !filterVplEl.value.startsWith('sec_') && filterVplEl.value !== 'all';
+
+        function getStudentRowMeta(uid, st) {
+            let uName = rawData.user_names_map && rawData.user_names_map[uid] ? rawData.user_names_map[uid] : uid;
+            let uLink = '<a href="../../user/view.php?id=' + uid + '&course=' + window.VplAnalyticsCourseId + '" target="_blank" style="text-decoration:none; color:#007bff; font-weight:bold;">' + escapeHTML(uName) + '</a>';
+            let isStagnant = false;
+            let isProcInit = false;
+            let isProcFinal = false;
+            let totalRuns = 0;
+            let totalEvals = 0;
+            let totalDebugs = 0;
+            let stagEvals = parseInt(document.getElementById('settingStagnantEvals').value) || 15;
+            let stagGrade = getNormalizedStagnantGrade();
+            let procInitHours = parseFloat(document.getElementById('settingProcInitHours').value) || 48;
+            let procFinalHours = parseFloat(document.getElementById('settingProcFinalHours').value) || 2;
+            
+            if (st.vplMaxEffort) {
+                Object.keys(st.vplMaxEffort).forEach(vplId => {
+                    let v = st.vplMaxEffort[vplId];
+                    totalRuns += v.runs || 0;
+                    totalEvals += v.evals || 0;
+                    totalDebugs += v.debugs || 0;
+                    if (v.evals >= stagEvals && (v.finalGrade === null || v.finalGrade < stagGrade)) {
+                        isStagnant = true;
+                    }
+                    let vDue = vplDict[vplId] ? vplDict[vplId].duedate : 0;
+                    if (vDue > 0) {
+                        if (v.firstSub >= (vDue - (procInitHours * 3600))) isProcInit = true;
+                        if (v.lastSub >= (vDue - (procFinalHours * 3600))) isProcFinal = true;
+                    }
+                });
+            }
+            
+            let badges = '';
+            if (isStagnant) badges += ' <span style="background:#dc3545; color:white; padding:2px 6px; border-radius:10px; font-size:0.75em;" title="' + lang.badge_risk_desc + '">' + lang.badge_risk + '</span>';
+            if (isProcInit) badges += ' <span style="background:#ffc107; color:black; padding:2px 6px; border-radius:10px; font-size:0.75em;" title="' + lang.badge_proc_init_desc + '">' + lang.badge_proc_init + '</span>';
+            if (isProcFinal) badges += ' <span style="background:#fd7e14; color:white; padding:2px 6px; border-radius:10px; font-size:0.75em;" title="' + lang.badge_proc_final_desc + '">' + lang.badge_proc_final + '</span>';
+            
+            return { uLink, badges, totalRuns, totalEvals, totalDebugs };
+        }
 
         let studentStats = {};
         subs.forEach(s => {
@@ -555,43 +607,19 @@ document.addEventListener('DOMContentLoaded', function() {
             
             let theadHtml = '<tr><th>' + lang.col_student + '</th><th>' + lang.col_group + '</th>';
             vplList.forEach(v => {
-                let shortName = v.name.length > 15 ? v.name.substring(0,12) + '...' : v.name;
-                theadHtml += '<th title=\'' + v.name + '\' style=\'text-align:center; min-width:80px;\'>' + shortName + '</th>';
+                let escName = escapeHTML(v.name);
+                let shortName = escName.length > 15 ? escName.substring(0,12) + '...' : escName;
+                theadHtml += '<th title=\'' + escName + '\' style=\'text-align:center; min-width:80px;\'>' + shortName + '</th>';
             });
             theadHtml += '</tr>';
             document.querySelector('.vpl-table ' + 'thead').innerHTML = theadHtml;
             
             sortedUsers.forEach(uid => {
                 let st = studentStats[uid];
-                let uName = rawData.user_names_map && rawData.user_names_map[uid] ? rawData.user_names_map[uid] : uid;
-                let uLink = '<a href=\"../../user/view.php?id=' + uid + '&course=' + window.VplAnalyticsCourseId + '\" target=\"_blank\" style=\"text-decoration:none; color:#007bff; font-weight:bold;\">' + uName + '</a>';
-                let isStagnant = false;
-                let isProcInit = false;
-                let isProcFinal = false;
-                let stagEvals = parseInt(document.getElementById('settingStagnantEvals').value) || 15;
-                let stagGrade = getNormalizedStagnantGrade();
-                let procInitHours = parseFloat(document.getElementById('settingProcInitHours').value) || 48;
-                let procFinalHours = parseFloat(document.getElementById('settingProcFinalHours').value) || 2;
-                
-                Object.keys(st.vplMaxEffort).forEach(vplId => {
-                    let v = st.vplMaxEffort[vplId];
-                    if (v.evals >= stagEvals && (v.finalGrade === null || v.finalGrade < stagGrade)) {
-                        isStagnant = true;
-                    }
-                    let vDue = vplDict[vplId] ? vplDict[vplId].duedate : 0;
-                    if (vDue > 0) {
-                        if (v.firstSub >= (vDue - (procInitHours * 3600))) isProcInit = true;
-                        if (v.lastGradeDate >= (vDue - (procFinalHours * 3600))) isProcFinal = true;
-                    }
-                });
-                
-                let badges = '';
-                if (isStagnant) badges += ' <span style=\'background:#dc3545; color:white; padding:2px 6px; border-radius:10px; font-size:0.75em;\' title=\'' + lang.badge_risk_desc + '\'>' + lang.badge_risk + '</span>';
-                if (isProcInit) badges += ' <span style=\'background:#ffc107; color:black; padding:2px 6px; border-radius:10px; font-size:0.75em;\' title=\'' + lang.badge_proc_init_desc + '\'>' + lang.badge_proc_init + '</span>';
-                if (isProcFinal) badges += ' <span style=\'background:#fd7e14; color:white; padding:2px 6px; border-radius:10px; font-size:0.75em;\' title=\'' + lang.badge_proc_final_desc + '\'>' + lang.badge_proc_final + '</span>';
+                let meta = getStudentRowMeta(uid, st);
                 
                 let tr = document.createElement('tr');
-                let rowHtml = '<td>' + uLink + badges + '</td><td>' + st.group + '</td>';
+                let rowHtml = '<td>' + meta.uLink + meta.badges + '</td><td>' + escapeHTML(st.group) + '</td>';
                 
                 vplList.forEach(v => {
                     let vEffort = st.vplMaxEffort[v.id];
@@ -610,76 +638,46 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        document.querySelector('.vpl-table ' + 'thead').innerHTML = '<tr><th>' + lang.col_student + '</th><th>' + lang.col_group + '</th><th>' + lang.label_subs + '</th><th class=\'col-grade\'>' + lang.label_avg_grade + '</th><th>First Sub</th><th>Last Sub</th><th>' + lang.label_runs + '</th><th>Debugs</th><th>' + lang.label_evals + '</th></tr>';
+        document.querySelector('.vpl-table ' + 'thead').innerHTML = '<tr><th>' + lang.col_student + '</th><th>' + lang.col_group + '</th><th>' + lang.label_subs + '</th><th class=\'col-grade\'>' + lang.label_avg_grade + '</th><th>' + lang.col_first_sub + '</th><th>' + lang.col_last_sub + '</th><th>' + lang.col_runs + '</th><th>' + lang.col_debugs + '</th><th>' + lang.col_evals + '</th></tr>';
         
         let gradeHeaderNode = document.querySelector('.vpl-table thead th.col-grade');
         if (gradeHeaderNode) gradeHeaderNode.style.display = isSpecificVpl ? '' : 'none';
 
         sortedUsers.forEach(uid => {
             let st = studentStats[uid];
-            let dFirst = st.firstSub ? new Date(st.firstSub * 1000).toLocaleDateString() : '--';
-            let dLast = st.lastSub ? new Date(st.lastSub * 1000).toLocaleDateString() : '--';
+            let dFirst = st.firstSub ? new Date(st.firstSub * 1000).toLocaleDateString(undefined, { day: '2-digit', month: '2-digit', year: 'numeric' }) : '--';
+            let dLast = st.lastSub ? new Date(st.lastSub * 1000).toLocaleDateString(undefined, { day: '2-digit', month: '2-digit', year: 'numeric' }) : '--';
             
             let gradeStr = formatGradeStr(st.finalGrade);
-            
-            let totalRuns = 0;
-            let totalEvals = 0;
-            let totalDebugs = 0;
-            let isStagnant = false;
-            let isProcInit = false;
-            let isProcFinal = false;
-            let stagEvals = parseInt(document.getElementById('settingStagnantEvals').value) || 15;
-            let stagGrade = getNormalizedStagnantGrade();
-            let procInitHours = parseFloat(document.getElementById('settingProcInitHours').value) || 48;
-            let procFinalHours = parseFloat(document.getElementById('settingProcFinalHours').value) || 2;
-            
-            if (st.vplMaxEffort) {
-                Object.keys(st.vplMaxEffort).forEach(vplId => {
-                    let v = st.vplMaxEffort[vplId];
-                    totalRuns += v.runs || 0;
-                    totalEvals += v.evals || 0;
-                    totalDebugs += v.debugs || 0;
-                    
-                    if (v.evals >= stagEvals && (v.finalGrade === null || v.finalGrade < stagGrade)) {
-                        isStagnant = true;
-                    }
-                    
-                    let vDue = vplDict[vplId] ? vplDict[vplId].duedate : 0;
-                    if (vDue > 0) {
-                        if (v.firstSub >= (vDue - (procInitHours * 3600))) isProcInit = true;
-                        if (v.lastSub >= (vDue - (procFinalHours * 3600))) isProcFinal = true;
-                    }
-                });
-            }
-            
-            let uName = rawData.user_names_map && rawData.user_names_map[uid] ? rawData.user_names_map[uid] : uid;
-            let uLink = '<a href=\"../../user/view.php?id=' + uid + '&course=' + window.VplAnalyticsCourseId + '\" target=\"_blank\" style=\"text-decoration:none; color:#007bff; font-weight:bold;\">' + uName + '</a>';
-            
-            let badges = '';
-            if (isStagnant) badges += ' <span style="background:#dc3545; color:white; padding:2px 6px; border-radius:10px; font-size:0.75em;" title="' + lang.badge_risk_desc + '">' + lang.badge_risk + '</span>';
-            if (isProcInit) badges += ' <span style="background:#ffc107; color:black; padding:2px 6px; border-radius:10px; font-size:0.75em;" title="' + lang.badge_proc_init_desc + '">' + lang.badge_proc_init + '</span>';
-            if (isProcFinal) badges += ' <span style="background:#fd7e14; color:white; padding:2px 6px; border-radius:10px; font-size:0.75em;" title="' + lang.badge_proc_final_desc + '">' + lang.badge_proc_final + '</span>';
+            let meta = getStudentRowMeta(uid, st);
             
             let tr = document.createElement('tr');
             let gradeTd = isSpecificVpl ? `<td>${gradeStr}</td>` : '';
             tr.innerHTML = `
-                <td>${uLink} ${badges}</td>
-                <td>${st.group}</td>
+                <td>${meta.uLink} ${meta.badges}</td>
+                <td>${escapeHTML(st.group)}</td>
                 <td>${st.subs}</td>
                 ${gradeTd}
                 <td>${dFirst}</td>
                 <td>${dLast}</td>
-                <td>${totalRuns}</td>
-                <td>${totalDebugs}</td>
-                <td>${totalEvals}</td>
+                <td>${meta.totalRuns}</td>
+                <td>${meta.totalDebugs}</td>
+                <td>${meta.totalEvals}</td>
             `;
             tbody.appendChild(tr);
         });
     }
 
     function renderChart(type, datasetsInfo) {
-        if (currentChart) currentChart.destroy();
-        const ctx = document.getElementById('mainChart').getContext('2d');
+        if (currentChart) {
+            currentChart.destroy();
+            currentChart = null;
+        }
+        let oldCanvas = document.getElementById('mainChart');
+        let newCanvas = document.createElement('canvas');
+        newCanvas.id = 'mainChart';
+        oldCanvas.parentNode.replaceChild(newCanvas, oldCanvas);
+        const ctx = newCanvas.getContext('2d');
         const chartInner = document.getElementById('chartInner');
         chartInner.style.minWidth = '100%';
         const chartWarning = document.getElementById('chartWarning');
@@ -859,7 +857,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         tooltip: { callbacks: { label: function(ctx) { 
                             let uid = ctx.raw.userid;
                             let uName = rawData.user_names_map && rawData.user_names_map[uid] ? rawData.user_names_map[uid] : uid;
-                            return `${uName}: ${ctx.raw.x} ejec., ${ctx.raw.y} evals.`; 
+                            return `${uName}: ${ctx.raw.x} ${lang.label_execs.toLowerCase()}, ${ctx.raw.y} ${lang.label_evals.toLowerCase()}`; 
                         } } }
                     },
                     scales: { x: { title: { display: true, text: lang.label_execs } }, y: { title: { display: true, text: lang.label_evals } } }
@@ -884,7 +882,7 @@ document.addEventListener('DOMContentLoaded', function() {
             commonLabels = Array.from(allDates).sort();
 
             chartDatasets = datasetsInfo.map((ds, i) => {
-                let dataPoints = commonLabels.map(d => ({ x: d, y: dateSets[i][d] || 0 }));
+                let dataPoints = commonLabels.map(d => dateSets[i][d] || 0);
                 return {
                     label: ds.label,
                     data: dataPoints,
@@ -896,11 +894,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
             currentChart = new Chart(ctx, {
                 type: 'bar',
-                data: { datasets: chartDatasets },
+                data: { labels: commonLabels, datasets: chartDatasets },
                 options: {
                     responsive: true,
                     plugins: { legend: { display: false }, zoom: zoomOptions },
-                    scales: { x: { type: 'time', time: {unit: 'day'} }, y: { beginAtZero: true, title: {display:true, text:lang.label_subs} } }
+                    scales: { x: { title: {display:false} }, y: { beginAtZero: true, title: {display:true, text:lang.label_subs} } }
                 }
             });
 

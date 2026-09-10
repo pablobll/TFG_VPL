@@ -10,12 +10,9 @@ require_capability('report/vpl_analytics:view', $context);
 $url = new moodle_url('/report/vpl_analytics/index.php', array('id' => $courseid));
 $PAGE->set_url($url);
 $PAGE->set_title(get_string('dashboard_title', 'report_vpl_analytics'));
-$PAGE->set_heading(get_string('dashboard_title', 'report_vpl_analytics'));
-
 
 $dashboard_data = \report_vpl_analytics\data_manager::get_dashboard_data($courseid);
 $dashboard_json = json_encode($dashboard_data);
-
 
 $lang_strings = [
     'col_student' => get_string('col_student', 'report_vpl_analytics'),

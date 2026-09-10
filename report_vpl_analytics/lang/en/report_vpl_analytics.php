@@ -94,4 +94,5 @@ $string['scale_base10'] = 'Base 10 (0-10)';
 $string['scale_base100'] = 'Base 100 (0-100)';
 $string['scale_letters'] = 'Letters (A-F)';
 $string['none_selected'] = '< None selected >';
-$string['btn_export_csv'] = 'Export to CSV';
+$string['settings_global_desc'] = 'This plugin does not require global configuration. Please navigate to the "Reports" tab inside any Course to access the interactive Dashboard.';
+$string['report/vpl_analytics:view'] = 'View VPL Analytics dashboard';

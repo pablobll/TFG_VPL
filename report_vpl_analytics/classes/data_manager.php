@@ -124,11 +124,15 @@ class data_manager {
         }
         
 
-
+        $final_submissions = [];
         foreach ($submissions as $sub) {
+            $user = $sub->userid;
+            if (!isset($enrolled_map[$user])) {
+                continue;
+            }
+
             $vpl_id = $sub->vpl;
             $vpl_name = $vpls[$vpl_id]->name;
-            $user = $sub->userid;
 
             $u_groups = isset($user_groups[$user]) ? $user_groups[$user] : [];
             if (empty($u_groups)) {
@@ -146,7 +150,7 @@ class data_manager {
                 }
             }
 
-            $enriched_submissions[] = [
+            $final_submissions[] = [
                 'id' => $sub->id,
                 'vpl' => $vpl_id,
                 'vpl_name' => $vpl_name,
@@ -162,7 +166,6 @@ class data_manager {
             ];
         }
 
-
         $no_group_count = 0;
         foreach ($all_enrolled_users as $uid) {
             if (empty($user_groups[$uid])) {
@@ -170,14 +173,7 @@ class data_manager {
             }
         }
         if ($no_group_count > 0) {
-            $groups_data[] = ['id' => 0, 'name' => 'Sin Grupo', 'member_count' => $no_group_count];
-        }
-
-        $final_submissions = [];
-        foreach ($enriched_submissions as $sub) {
-            if (isset($enrolled_map[$sub['userid']])) {
-                $final_submissions[] = $sub;
-            }
+            $groups_data[] = ['id' => 0, 'name' => get_string('label_no_group', 'report_vpl_analytics'), 'member_count' => $no_group_count];
         }
 
         return [
