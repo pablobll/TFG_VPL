@@ -14,6 +14,17 @@ $PAGE->set_title(get_string('dashboard_title', 'report_vpl_analytics'));
 $dashboard_data = \report_vpl_analytics\data_manager::get_dashboard_data($courseid);
 $dashboard_json = json_encode($dashboard_data);
 
+/*
+ * Diccionario de cadenas de texto internacionalizadas.
+ * Estas claves se inyectan como JSON en el frontend (window.VplAnalyticsLang)
+ * y son consumidas directamente en dashboard.js.
+ * 
+ * Mapeo de uso principal en dashboard.js:
+ * - col_*, label_*: Usadas en updateTable() para las cabeceras de la tabla inferior y tooltips.
+ * - badge_*: Inyectadas en el DOM para los tooltips de insignias (riesgo, procrastinación).
+ * - chart_*, cat_*: Usadas en renderChart() para las leyendas y labels de los gráficos.
+ * - js_*: Usadas para la generación dinámica de la matriz y textos de la interfaz.
+ */
 $lang_strings = [
     'col_student' => get_string('col_student', 'report_vpl_analytics'),
     'col_group' => get_string('col_group', 'report_vpl_analytics'),

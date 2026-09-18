@@ -472,6 +472,19 @@ document.addEventListener('DOMContentLoaded', function() {
         if(elInactiveUsers) elInactiveUsers.innerText = inactiveCount;
     }
 
+    /**
+     * Reconstruye la tabla inferior (DOM) con las estadísticas de los estudiantes.
+     * Calcula métricas individuales (intentos, nota media, insignias de riesgo/procrastinación)
+     * basándose en las entregas filtradas.
+     * 
+     * Nota: Si el modo de análisis activo (analysisMode) es 'matriz', esta función anula 
+     * el renderizado de la tabla estándar y en su lugar pinta una tabla HTML bidimensional 
+     * (Estudiante vs. VPL) para comparar el progreso en cada actividad.
+     * 
+     * @param {Array} subs - Lista de entregas (submissions) a procesar
+     * @param {Set|null} allowedGroupIds - Filtro opcional de grupos
+     * @param {Set|null} allowedUserIds - Filtro opcional de usuarios
+     */
     function updateTable(subs, allowedGroupIds = null, allowedUserIds = null) {
         const tbody = document.getElementById('dataTableBody');
         tbody.innerHTML = '';
@@ -668,6 +681,17 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    /**
+     * Dibuja la gráfica principal usando Chart.js o renderiza el HTML personalizado.
+     * Gestiona la destrucción del canvas previo para evitar bugs de caché visual.
+     * 
+     * @param {string} type - Tipo de gráfico a dibujar:
+     *    - 'rendimiento': Gráfico de barras (distribución de notas por rangos)
+     *    - 'evolucion': Gráfico de barras temporales (entregas por día)
+     *    - 'esfuerzo': Gráfico de dispersión de desempeño práctico (evaluaciones vs ejecuciones)
+     *    - 'heatmap_tiempo': Tabla HTML pura (matriz de entregas por día/hora)
+     * @param {Array} datasetsInfo - Datos empaquetados listos para inyectarse en Chart.js
+     */
     function renderChart(type, datasetsInfo) {
         if (currentChart) {
             currentChart.destroy();

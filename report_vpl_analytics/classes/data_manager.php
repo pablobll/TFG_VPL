@@ -18,6 +18,10 @@ class data_manager {
             ];
         }
 
+        /*
+         * Obtención de todas las actividades VPL del curso.
+         * Se construye el array $vpls_data que representa la metadata básica (nombre, fechas, si es grupal) de cada VPL.
+         */
         $vpls = $DB->get_records('vpl', ['course' => $courseid]);
         if (empty($vpls)) {
             return [
@@ -67,14 +71,23 @@ class data_manager {
             ];
         }
         
+        /*
+         * Extracción masiva de entregas (submissions) de los VPLs recuperados.
+         * Se obtiene el conjunto bruto de entregas desde la BD para procesarlas en memoria.
+         */
         list($in_sql, $in_params) = $DB->get_in_or_equal($vpl_ids);
         $sql = "SELECT id, vpl, userid, datesubmitted, grade, groupid, nevaluations, run_count, debug_count 
                 FROM {vpl_submissions} 
                 WHERE vpl $in_sql";
         $submissions = $DB->get_records_sql($sql, $in_params);
 
-        $enriched_submissions = [];
-
+        /*
+         * Identificación de usuarios matriculados (excluyendo profesores).
+         * Se construyen estructuras clave devueltas en el JSON final:
+         * - $all_enrolled_users: Array plano con los IDs de los estudiantes.
+         * - $user_names_map: Diccionario (ID -> Nombre Completo) usado en el frontend.
+         * - $total_students: Total de alumnos para cálculos de porcentajes en KPIs.
+         */
         $context = \context_course::instance($courseid);
         $enrolled_users_obj = get_enrolled_users($context, 'mod/vpl:submit', 0, 'u.id, u.firstname, u.lastname');
         $teachers_obj = get_enrolled_users($context, 'mod/vpl:grade', 0, 'u.id');
@@ -101,6 +114,10 @@ class data_manager {
         sort($all_enrolled_users);
         $total_students = count($all_enrolled_users);
 
+        /*
+         * Mapeo de grupos de Moodle y asociación con los estudiantes.
+         * Se genera el diccionario $user_groups que vincula cada userid con sus grupos, permitiendo filtros comparativos.
+         */
         $course_groups = groups_get_all_groups($courseid);
         $groups_data = [];
         $user_groups = [];
@@ -124,6 +141,11 @@ class data_manager {
         }
         
 
+        /*
+         * Limpieza y estructuración final de entregas válidas.
+         * Se genera $final_submissions asociando cada entrega al alumno, su grupo 
+         * y calculando métricas como 'first_submission' o 'procrastinator'.
+         */
         $final_submissions = [];
         foreach ($submissions as $sub) {
             $user = $sub->userid;
