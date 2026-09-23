@@ -260,6 +260,7 @@ class data_manager {
 
             $final_submissions[] = [
                 'id' => $sub->id,
+                'real_id' => $sub->id,
                 'vpl' => $vpl_id,
                 'vpl_name' => $vpl_name,
                 'course' => (int)$courseid,

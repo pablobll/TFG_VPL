@@ -62,7 +62,6 @@ document.addEventListener('DOMContentLoaded', function() {
     let expandedSubmissions = [];
     if (rawData.submissions && rawData.users && rawData.user_groups_map) {
         rawData.submissions.forEach(s => {
-            s.real_id = s.id;
             if (s.groupid && s.groupid > 0) {
                 let groupMembers = rawData.users.filter(uid => rawData.user_groups_map[uid] && rawData.user_groups_map[uid].includes(s.groupid));
                 if (groupMembers.length > 0) {
