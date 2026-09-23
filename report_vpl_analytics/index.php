@@ -1,4 +1,27 @@
 <?php
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+/**
+ * VPL Analytics Dashboard
+ *
+ * @package    report_vpl_analytics
+ * @copyright  2024 Pablobll
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+
 ini_set('memory_limit', '512M');
 require(__DIR__ . '/../../config.php');
 
@@ -12,6 +35,14 @@ $PAGE->set_url($url);
 $PAGE->set_title(get_string('dashboard_title', 'report_vpl_analytics'));
 
 $dashboard_data = \report_vpl_analytics\data_manager::get_dashboard_data($courseid);
+
+$pass_threshold = get_config('report_vpl_analytics', 'pass_threshold');
+$exc_threshold = get_config('report_vpl_analytics', 'exc_threshold');
+$dashboard_data['settings'] = [
+    'pass_threshold' => ($pass_threshold !== false && $pass_threshold !== '') ? (float)$pass_threshold : 0.5,
+    'exc_threshold' => ($exc_threshold !== false && $exc_threshold !== '') ? (float)$exc_threshold : 0.9
+];
+
 $dashboard_json = json_encode($dashboard_data);
 
 /*
@@ -86,21 +117,9 @@ $lang_json = json_encode($lang_strings);
 $PAGE->requires->css(new moodle_url('/report/vpl_analytics/styles.css'));
 
 $js_version = time();
-$PAGE->requires->js('/report/vpl_analytics/js/vendor/chart.min.js');
-$PAGE->requires->js('/report/vpl_analytics/js/vendor/chartjs-adapter-date-fns.bundle.min.js');
-$PAGE->requires->js('/report/vpl_analytics/js/vendor/hammer.min.js');
-$PAGE->requires->js('/report/vpl_analytics/js/vendor/chartjs-plugin-zoom.min.js');
 
 echo $OUTPUT->header();
 
-echo '<script>
-    var VplAnalyticsCourseId = ' . $courseid . ';
-    var VplAnalyticsLang = ' . $lang_json . ';
-    var VplAnalyticsData = ' . $dashboard_json . ';
-</script>';
-
 require_once(__DIR__ . '/views/dashboard.php');
-
-echo '<script src="' . $CFG->wwwroot . '/report/vpl_analytics/js/dashboard.js?v=' . $js_version . '"></script>';
 
 echo $OUTPUT->footer();

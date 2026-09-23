@@ -1,21 +1,65 @@
 <?php
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+/**
+ * VPL Analytics Dashboard
+ *
+ * @package    report_vpl_analytics
+ * @copyright  2024 Pablobll
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+
 namespace report_vpl_analytics;
 
 defined('MOODLE_INTERNAL') || die();
 
 class data_manager {
 
+    /**
+     * Devuelve la estructura vacía estándar cuando no hay datos disponibles o el usuario no tiene permisos.
+     *
+     * @param int|null $courseid
+     * @param bool $has_scales
+     * @return array
+     */
+    private static function empty_payload($courseid, $has_scales = false) {
+        return [
+            'courses' => empty($courseid) ? [] : [$courseid],
+            'groups' => [],
+            'users' => [],
+            'vpls' => [],
+            'submissions' => [],
+            'user_names_map' => [],
+            'total_students' => 0,
+            'has_scales_excluded' => $has_scales
+        ];
+    }
+
+    /**
+     * Extrae, limpia y empaqueta todos los datos de las actividades VPL de un curso.
+     *
+     * @param int $courseid ID del curso en Moodle.
+     * @return array Estructura con VPLs, entregas, grupos y métricas.
+     */
     public static function get_dashboard_data($courseid) {
         global $DB, $CFG;
         require_once($CFG->dirroot . '/lib/grouplib.php');
 
         if (empty($courseid)) {
-            return [
-                'courses' => [],
-                'groups' => [],
-                'users' => [],
-                'submissions' => []
-            ];
+            return self::empty_payload($courseid);
         }
 
         /*
@@ -24,35 +68,47 @@ class data_manager {
          */
         $vpls = $DB->get_records('vpl', ['course' => $courseid]);
         if (empty($vpls)) {
-            return [
-                'courses' => [$courseid],
-                'groups' => [],
-                'users' => [],
-                'submissions' => []
-            ];
+            return self::empty_payload($courseid);
+        }
+
+        $modinfo = get_fast_modinfo($courseid);
+        $vpl_cms = $modinfo->get_instances_of('vpl');
+
+        $has_scales_excluded = false;
+        foreach ($vpls as $key => $vpl) {
+            if ((float)$vpl->grade < 0) {
+                $has_scales_excluded = true;
+                unset($vpls[$key]);
+                continue;
+            }
+            if (!isset($vpl_cms[$vpl->id]) || !$vpl_cms[$vpl->id]->uservisible) {
+                unset($vpls[$key]);
+            }
         }
 
         $vpl_ids = array_keys($vpls);
+        if (empty($vpl_ids)) {
+            return self::empty_payload($courseid, $has_scales_excluded);
+        }
+
         $vpls_data = [];
         
-        $modinfo = get_fast_modinfo($courseid);
         $now = time();
+        $cm_pos_map = [];
+        $pos = 0;
+        foreach ($modinfo->cms as $cm) {
+            $pos++;
+            if ($cm->modname === 'vpl') {
+                $cm_pos_map[$cm->instance] = $pos;
+            }
+        }
 
         foreach ($vpls as $vpl) {
-            $section_name = 'General';
-            $is_cm_group = false;
-            $course_order = 99999;
-            $cm_pos = 0;
-            foreach ($modinfo->cms as $cm) {
-                $cm_pos++;
-                if ($cm->modname === 'vpl' && $cm->instance == $vpl->id) {
-                    $sectioninfo = $modinfo->get_section_info($cm->sectionnum);
-                    $section_name = $sectioninfo->name ?: get_string('section') . ' ' . $cm->sectionnum;
-                    $is_cm_group = ($cm->groupmode > 0);
-                    $course_order = $cm_pos;
-                    break;
-                }
-            }
+            $cm = $vpl_cms[$vpl->id];
+            $sectioninfo = $modinfo->get_section_info($cm->sectionnum);
+            $section_name = $sectioninfo->name ?: get_string('section') . ' ' . $cm->sectionnum;
+            $is_cm_group = ($cm->groupmode > 0);
+            $course_order = $cm_pos_map[$vpl->id] ?? 99999;
 
             $is_graded = ($vpl->grade > 0);
             $is_closed = ($vpl->duedate > 0 && $vpl->duedate < $now);
@@ -89,6 +145,30 @@ class data_manager {
          * - $total_students: Total de alumnos para cálculos de porcentajes en KPIs.
          */
         $context = \context_course::instance($courseid);
+        $course = $DB->get_record('course', ['id' => $courseid]);
+        $groupmode = groups_get_course_groupmode($course);
+        $accessallgroups = has_capability('moodle/site:accessallgroups', $context);
+        
+        $allowed_group_ids = null;
+        $allowed_users = [];
+        if ($groupmode == SEPARATEGROUPS && !$accessallgroups) {
+            global $USER;
+            $my_groups = groups_get_all_groups($courseid, $USER->id);
+            $allowed_group_ids = [];
+            foreach ($my_groups as $g) {
+                $allowed_group_ids[$g->id] = true;
+                $members = groups_get_members($g->id, 'u.id');
+                if ($members) {
+                    foreach ($members as $u) {
+                        $allowed_users[$u->id] = true;
+                    }
+                }
+            }
+            if (empty($allowed_group_ids)) {
+                return self::empty_payload($courseid, $has_scales_excluded);
+            }
+        }
+
         $enrolled_users_obj = get_enrolled_users($context, 'mod/vpl:submit', 0, 'u.id, u.firstname, u.lastname');
         $teachers_obj = get_enrolled_users($context, 'mod/vpl:grade', 0, 'u.id');
         $teacher_ids = [];
@@ -105,6 +185,9 @@ class data_manager {
             foreach ($enrolled_users_obj as $eu) {
                 $uid = (int)$eu->id;
                 if (!isset($teacher_ids[$uid])) {
+                    if ($allowed_group_ids !== null && !isset($allowed_users[$uid])) {
+                        continue;
+                    }
                     $all_enrolled_users[] = $uid;
                     $enrolled_map[$uid] = true;
                     $user_names_map[$uid] = fullname($eu);
@@ -123,6 +206,9 @@ class data_manager {
         $user_groups = [];
         if ($course_groups) {
             foreach ($course_groups as $g) {
+                if ($allowed_group_ids !== null && !isset($allowed_group_ids[$g->id])) {
+                    continue;
+                }
                 $members = groups_get_members($g->id, 'u.id');
                 $student_count = 0;
                 if ($members) {
@@ -168,7 +254,7 @@ class data_manager {
                 if ($max_grade > 0) {
                     $grade = $raw_grade / $max_grade;
                 } else {
-                    $grade = $raw_grade;
+                    $grade = null;
                 }
             }
 
@@ -206,7 +292,8 @@ class data_manager {
             'user_names_map' => $user_names_map,
             'user_groups_map' => $user_groups,
             'total_students' => $total_students,
-            'submissions' => $final_submissions
+            'submissions' => $final_submissions,
+            'has_scales_excluded' => $has_scales_excluded
         ];
     }
 }

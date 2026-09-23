@@ -1,4 +1,27 @@
 <?php
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+/**
+ * VPL Analytics Dashboard
+ *
+ * @package    report_vpl_analytics
+ * @copyright  2024 Pablobll
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+
 $string['pluginname'] = 'Dashboard Analítico VPL';
 $string['dashboard_title'] = 'Dashboard Analítico VPL';
 $string['kpi_avg_grade'] = 'Nota Media Global';
@@ -94,5 +117,12 @@ $string['scale_base10'] = 'Base 10 (0-10)';
 $string['scale_base100'] = 'Base 100 (0-100)';
 $string['scale_letters'] = 'Letras (A-F)';
 $string['none_selected'] = '< Sin seleccionar >';
-$string['settings_global_desc'] = 'Este plugin no requiere configuración técnica global. Por favor, navega a la pestaña de "Informes" (Reports) dentro de cualquier Asignatura para acceder al Dashboard interactivo.';
+$string['settings_global_desc'] = 'Configura aquí los umbrales de evaluación globales por defecto para el panel analítico. Puedes acceder al Dashboard interactivo desde la pestaña de "Informes" (Reports) de cualquier asignatura.';
 $string['report/vpl_analytics:view'] = 'Ver dashboard de VPL Analytics';
+$string['setting_pass_threshold'] = 'Umbral de Aprobado';
+$string['setting_pass_threshold_desc'] = 'Nota normalizada (entre 0.0 y 1.0) a partir de la cual una actividad se considera aprobada. Por defecto: 0.5 (equivalente a un 5 sobre 10).';
+$string['setting_exc_threshold'] = 'Umbral de Excelencia';
+$string['setting_exc_threshold_desc'] = 'Nota normalizada (entre 0.0 y 1.0) a partir de la cual una actividad se considera excelente. Por defecto: 0.9 (equivalente a un 9 sobre 10).';
+$string['warning_scales_excluded'] = 'Atención: Algunas actividades VPL utilizan escalas no numéricas (como Suspenso/Aprobado) en lugar de una puntuación máxima. Estas actividades han sido excluidas temporalmente de los cálculos estadísticos para mantener la integridad de las medias y gráficos del panel.';
+$string['privacy:metadata'] = 'El plugin Dashboard Analítico VPL no almacena ningún dato personal. Toda la información mostrada se calcula al vuelo a partir de los datos existentes en Moodle.';
+

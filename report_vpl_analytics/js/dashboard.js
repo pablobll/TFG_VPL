@@ -3,6 +3,8 @@ const lang = window.VplAnalyticsLang;
 document.addEventListener('DOMContentLoaded', function() {
 
     const rawData = window.VplAnalyticsData;
+    const passThresh = (rawData.settings && rawData.settings.pass_threshold !== undefined) ? parseFloat(rawData.settings.pass_threshold) : 0.5;
+    const excThresh = (rawData.settings && rawData.settings.exc_threshold !== undefined) ? parseFloat(rawData.settings.exc_threshold) : 0.9;
     
     function getSelectedScale() {
         return document.getElementById('settingGradeScale').value || '10';
@@ -36,8 +38,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function getGradeColor(normalizedGrade) {
         if (normalizedGrade === null || isNaN(normalizedGrade)) return 'transparent';
-        if (normalizedGrade >= 0.7) return '#28a745';
-        if (normalizedGrade >= 0.5) return '#ffc107';
+        if (normalizedGrade >= excThresh) return '#28a745';
+        if (normalizedGrade >= passThresh) return '#ffc107';
         return '#dc3545';
     }
 
@@ -60,6 +62,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let expandedSubmissions = [];
     if (rawData.submissions && rawData.users && rawData.user_groups_map) {
         rawData.submissions.forEach(s => {
+            s.real_id = s.id;
             if (s.groupid && s.groupid > 0) {
                 let groupMembers = rawData.users.filter(uid => rawData.user_groups_map[uid] && rawData.user_groups_map[uid].includes(s.groupid));
                 if (groupMembers.length > 0) {
@@ -175,7 +178,7 @@ document.addEventListener('DOMContentLoaded', function() {
             sections[secName].forEach(v => {
                 let opt = document.createElement('option');
                 opt.value = v.id; 
-                opt.innerHTML = '&nbsp;&nbsp;&nbsp;&nbsp;' + v.name;
+                opt.textContent = '\u00A0\u00A0\u00A0\u00A0' + v.name;
                 filterVplEl.appendChild(opt);
             });
         });
@@ -214,8 +217,6 @@ document.addEventListener('DOMContentLoaded', function() {
     function updateDashboard() {
         const heatOption = Array.from(chartTypeEl.options).find(opt => opt.value === 'heatmap_tiempo');
         if (heatOption) { heatOption.disabled = false; heatOption.style.display = ''; }
-        
-        let isSpecificVpl = !isNaN(parseInt(filterVplEl.value)) && !filterVplEl.value.startsWith('cat_') && !filterVplEl.value.startsWith('sec_') && filterVplEl.value !== 'all';
         
         if (analysisModeEl.value !== 'global') {
             if (heatOption) { heatOption.disabled = true; heatOption.style.display = 'none'; }
@@ -432,15 +433,15 @@ document.addEventListener('DOMContentLoaded', function() {
             sumGrades += g.grade;
             countGrades++;
             gradeArray.push(g.grade);
-            if (g.grade >= 0.5) passCount++;
-            if (g.grade >= 0.9) excCount++;
+            if (g.grade >= passThresh) passCount++;
+            if (g.grade >= excThresh) excCount++;
         });
 
-        let avgStr = countGrades > 0 ? formatGradeStr(sumGrades / countGrades) : formatGradeStr(0);
-        let passStr = countGrades > 0 ? ((passCount / countGrades) * 100).toFixed(1) + '%' : '0.0%';
-        let excStr = countGrades > 0 ? ((excCount / countGrades) * 100).toFixed(1) + '%' : '0.0%';
+        let avgStr = countGrades > 0 ? formatGradeStr(sumGrades / countGrades) : '--';
+        let passStr = countGrades > 0 ? ((passCount / countGrades) * 100).toFixed(1) + '%' : '--';
+        let excStr = countGrades > 0 ? ((excCount / countGrades) * 100).toFixed(1) + '%' : '--';
         
-        let medianStr = formatGradeStr(0);
+        let medianStr = '--';
         if (gradeArray.length > 0) {
             gradeArray.sort((a,b) => a - b);
             let mid = Math.floor(gradeArray.length / 2);
@@ -458,9 +459,12 @@ document.addEventListener('DOMContentLoaded', function() {
         const elMed = document.getElementById('kpiMedian');
         if(elMed) elMed.innerText = medianStr;
 
-        const totalSubs = subs.length;
         const activeCount = activeUsers.size;
         const inactiveCount = Math.max(0, totalAllowed - activeCount);
+
+        let uniqueSubs = new Set();
+        subs.forEach(s => uniqueSubs.add(s.real_id));
+        const totalSubs = uniqueSubs.size;
 
         const elTotalSubs = document.getElementById('kpiTotalSubs');
         if(elTotalSubs) elTotalSubs.innerText = totalSubs;
@@ -558,14 +562,14 @@ document.addEventListener('DOMContentLoaded', function() {
             if (s.datesubmitted > st.lastSub) st.lastSub = s.datesubmitted;
             
             if (!st.vplMaxEffort[s.vpl]) {
-                st.vplMaxEffort[s.vpl] = { runs: 0, evals: 0, debugs: 0, firstSub: s.datesubmitted, finalGrade: null, lastSub: s.datesubmitted };
+                st.vplMaxEffort[s.vpl] = { runs: 0, evals: 0, debugs: 0, firstSub: s.datesubmitted, finalGrade: null, lastSub: s.datesubmitted, lastGradeDate: 0 };
             }
             if (s.datesubmitted < st.vplMaxEffort[s.vpl].firstSub) st.vplMaxEffort[s.vpl].firstSub = s.datesubmitted;
             if (s.datesubmitted > st.vplMaxEffort[s.vpl].lastSub) st.vplMaxEffort[s.vpl].lastSub = s.datesubmitted;
             if (s.grade !== null) {
-                if (st.vplMaxEffort[s.vpl].finalGrade === null || s.datesubmitted > st.vplMaxEffort[s.vpl].lastSub) {
+                if (st.vplMaxEffort[s.vpl].finalGrade === null || s.datesubmitted > st.vplMaxEffort[s.vpl].lastGradeDate) {
                     st.vplMaxEffort[s.vpl].finalGrade = s.grade;
-                    st.vplMaxEffort[s.vpl].lastSub = s.datesubmitted;
+                    st.vplMaxEffort[s.vpl].lastGradeDate = s.datesubmitted;
                 }
             }
             if (s.run_count > st.vplMaxEffort[s.vpl].runs) st.vplMaxEffort[s.vpl].runs = s.run_count;
@@ -641,7 +645,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     } else {
                         let grade = vEffort.finalGrade;
                         let bg = getGradeColor(grade);
-                        let color = (grade >= 0.5 && grade < 0.7) ? 'black' : 'white';
+                        let color = (grade >= passThresh && grade < excThresh) ? 'black' : 'white';
                         rowHtml += '<td style=\'background:' + bg + '; color:' + color + '; font-weight:bold; text-align:center;\'>' + formatGradeStr(grade) + '</td>';
                     }
                 });
@@ -723,7 +727,10 @@ document.addEventListener('DOMContentLoaded', function() {
             let matrix = Array(7).fill(0).map(() => Array(24).fill(0));
             let maxVal = 0;
             datasetsInfo.forEach(ds => {
+                let processedRealIds = new Set();
                 ds.data.forEach(s => {
+                    if (processedRealIds.has(s.real_id)) return;
+                    processedRealIds.add(s.real_id);
                     let d = new Date(s.datesubmitted * 1000);
                     let day = d.getDay();
                     let hour = d.getHours();
@@ -891,7 +898,10 @@ document.addEventListener('DOMContentLoaded', function() {
         } else if (type === 'evolucion') {
             let dateSets = datasetsInfo.map(ds => {
                 let dateCounts = {};
+                let processedRealIds = new Set();
                 ds.data.forEach(s => {
+                    if (processedRealIds.has(s.real_id)) return;
+                    processedRealIds.add(s.real_id);
                     let jsDate = new Date(s.datesubmitted * 1000);
                     let d = jsDate.getFullYear() + '-' + 
                             String(jsDate.getMonth() + 1).padStart(2, '0') + '-' + 
@@ -954,7 +964,7 @@ document.addEventListener('DOMContentLoaded', function() {
             csv.push(row.join(','));
         }
         
-        let csvFile = new Blob([csv.join('\\n')], {type: 'text/csv'});
+        let csvFile = new Blob([csv.join('\r\n')], {type: 'text/csv;charset=utf-8;'});
         let downloadLink = document.createElement('a');
         downloadLink.download = 'vpl_analytics_export.csv';
         downloadLink.href = window.URL.createObjectURL(csvFile);

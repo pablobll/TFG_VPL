@@ -22,26 +22,17 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-defined('MOODLE_INTERNAL') || die;
+namespace report_vpl_analytics\privacy;
 
-$settings = new admin_settingpage('reportvpl_analytics_settings', get_string('pluginname', 'report_vpl_analytics'));
-$settings->add(new admin_setting_heading(
-    'reportvpl_analytics_heading', 
-    '', 
-    get_string('settings_global_desc', 'report_vpl_analytics')
-));
-$settings->add(new admin_setting_configtext(
-    'report_vpl_analytics/pass_threshold',
-    get_string('setting_pass_threshold', 'report_vpl_analytics'),
-    get_string('setting_pass_threshold_desc', 'report_vpl_analytics'),
-    '0.5',
-    PARAM_FLOAT
-));
+defined('MOODLE_INTERNAL') || die();
 
-$settings->add(new admin_setting_configtext(
-    'report_vpl_analytics/exc_threshold',
-    get_string('setting_exc_threshold', 'report_vpl_analytics'),
-    get_string('setting_exc_threshold_desc', 'report_vpl_analytics'),
-    '0.9',
-    PARAM_FLOAT
-));
+class provider implements \core_privacy\local\metadata\null_provider {
+    /**
+     * Get the language string identifier to explain why this plugin stores no data.
+     *
+     * @return  string
+     */
+    public static function get_reason(): string {
+        return 'privacy:metadata';
+    }
+}
