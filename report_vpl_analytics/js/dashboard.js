@@ -26,10 +26,14 @@ document.addEventListener('DOMContentLoaded', function() {
         if (scale === '100') {
             return (normalizedGrade * 100).toFixed(1);
         } else if (scale === 'letters') {
-            if (normalizedGrade >= 0.9) return 'A';
-            if (normalizedGrade >= 0.8) return 'B';
-            if (normalizedGrade >= 0.7) return 'C';
-            if (normalizedGrade >= 0.6) return 'D';
+            let vA = parseInt(document.getElementById('settingLetterA').value, 10); let tA = (isNaN(vA) ? 9 : vA) / 10;
+            let vB = parseInt(document.getElementById('settingLetterB').value, 10); let tB = (isNaN(vB) ? 8 : vB) / 10;
+            let vC = parseInt(document.getElementById('settingLetterC').value, 10); let tC = (isNaN(vC) ? 7 : vC) / 10;
+            let vD = parseInt(document.getElementById('settingLetterD').value, 10); let tD = (isNaN(vD) ? 6 : vD) / 10;
+            if (normalizedGrade >= tA) return 'A';
+            if (normalizedGrade >= tB) return 'B';
+            if (normalizedGrade >= tC) return 'C';
+            if (normalizedGrade >= tD) return 'D';
             return 'F';
         } else {
             return (normalizedGrade * 10).toFixed(2);
@@ -110,9 +114,30 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('btnSettings').addEventListener('click', () => document.getElementById('settingsModal').style.display = 'flex');
     document.getElementById('btnSettingsCancel').addEventListener('click', () => document.getElementById('settingsModal').style.display = 'none');
     document.getElementById('btnSettingsSave').addEventListener('click', () => {
+        if (gradeScaleEl.value === 'letters') {
+            let vA = parseInt(document.getElementById('settingLetterA').value, 10); let tA = isNaN(vA) ? 9 : vA;
+            let vB = parseInt(document.getElementById('settingLetterB').value, 10); let tB = isNaN(vB) ? 8 : vB;
+            let vC = parseInt(document.getElementById('settingLetterC').value, 10); let tC = isNaN(vC) ? 7 : vC;
+            let vD = parseInt(document.getElementById('settingLetterD').value, 10); let tD = isNaN(vD) ? 6 : vD;
+            if (tA > 10 || tB > 10 || tC > 10 || tD > 10) {
+                alert("Error: El valor máximo permitido es 10.");
+                return;
+            }
+            if (!(tA > tB && tB > tC && tC > tD)) {
+                alert(lang.error_invalid_letter_ranges || "Error: The grade thresholds must be in strictly descending order (A > B > C > D).");
+                return;
+            }
+        }
         document.getElementById('settingsModal').style.display = 'none';
         updateDashboard();
     });
+
+    const gradeScaleEl = document.getElementById('settingGradeScale');
+    const letterRangesEl = document.getElementById('letterRangesContainer');
+    gradeScaleEl.addEventListener('change', () => {
+        letterRangesEl.style.display = gradeScaleEl.value === 'letters' ? 'block' : 'none';
+    });
+    letterRangesEl.style.display = gradeScaleEl.value === 'letters' ? 'block' : 'none';
 
     let groupMap = {};
     let groupCountMap = {};

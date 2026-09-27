@@ -189,7 +189,7 @@ defined('MOODLE_INTERNAL') || die(); ?>
 </div>
 
 <div id="settingsModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9999; justify-content:center; align-items:center;">
-    <div style="background:white; padding:20px; border-radius:5px; width:400px; box-shadow:0 4px 12px rgba(0,0,0,0.15);">
+    <div style="background:white; padding:20px; border-radius:5px; width:500px; box-shadow:0 4px 12px rgba(0,0,0,0.15);">
         <h3 style="margin-top:0;"><?= get_string('settings_title', 'report_vpl_analytics') ?></h3>
         <p style="font-size:0.9em; color:#666;"><?= get_string('settings_desc', 'report_vpl_analytics') ?></p>
         <div style="margin-bottom:20px;">
@@ -226,6 +226,27 @@ defined('MOODLE_INTERNAL') || die(); ?>
                 <option value="100"><?= get_string('scale_base100', 'report_vpl_analytics') ?></option>
                 <option value="letters"><?= get_string('scale_letters', 'report_vpl_analytics') ?></option>
             </select>
+        </div>
+        <div id="letterRangesContainer" style="display:none; margin-bottom:20px; padding:10px; background:#f8f9fa; border:1px solid #dee2e6; border-radius:4px;">
+            <label style="display:block; margin-bottom:10px; font-weight:bold; font-size:0.95em; color:#495057;"><?= get_string('settings_letter_ranges', 'report_vpl_analytics') ?></label>
+            <div style="display:flex; gap:10px; text-align:center;">
+                <div style="flex:1;">
+                    <small style="color:#6c757d; font-size: 0.8em;"><?= get_string('settings_letter_a', 'report_vpl_analytics') ?></small><br>
+                    <input type="number" id="settingLetterA" value="9" step="1" max="10" min="0" oninput="this.value=this.value.replace(/[^0-9]/g,''); if(this.value>10) this.value=10;" style="width:100%; padding:4px;">
+                </div>
+                <div style="flex:1;">
+                    <small style="color:#6c757d; font-size: 0.8em;"><?= get_string('settings_letter_b', 'report_vpl_analytics') ?></small><br>
+                    <input type="number" id="settingLetterB" value="8" step="1" max="10" min="0" oninput="this.value=this.value.replace(/[^0-9]/g,''); if(this.value>10) this.value=10;" style="width:100%; padding:4px;">
+                </div>
+                <div style="flex:1;">
+                    <small style="color:#6c757d; font-size: 0.8em;"><?= get_string('settings_letter_c', 'report_vpl_analytics') ?></small><br>
+                    <input type="number" id="settingLetterC" value="7" step="1" max="10" min="0" oninput="this.value=this.value.replace(/[^0-9]/g,''); if(this.value>10) this.value=10;" style="width:100%; padding:4px;">
+                </div>
+                <div style="flex:1;">
+                    <small style="color:#6c757d; font-size: 0.8em;"><?= get_string('settings_letter_d', 'report_vpl_analytics') ?></small><br>
+                    <input type="number" id="settingLetterD" value="6" step="1" max="10" min="0" oninput="this.value=this.value.replace(/[^0-9]/g,''); if(this.value>10) this.value=10;" style="width:100%; padding:4px;">
+                </div>
+            </div>
         </div>
         <div style="text-align:right;">
             <button type="button" id="btnSettingsCancel" style="padding:6px 12px; margin-right:10px; cursor:pointer;"><?= get_string('settings_cancel', 'report_vpl_analytics') ?></button>
