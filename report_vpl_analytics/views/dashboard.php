@@ -126,6 +126,12 @@ defined('MOODLE_INTERNAL') || die(); ?>
                     <option value="none"><?= get_string('none_selected', 'report_vpl_analytics') ?></option>
                 </select>
             </div>
+            <div class="vpl-control-group">
+                <label><?= get_string('filter_vpl', 'report_vpl_analytics') ?></label>
+                <select id="compareGroupsFilterVpl">
+                    <option value="all"><?= get_string('all_vpls', 'report_vpl_analytics') ?></option>
+                </select>
+            </div>
         </div>
 
         <div id="panelCompareUsers" style="display:none; gap:20px; width:100%;">
@@ -139,6 +145,12 @@ defined('MOODLE_INTERNAL') || die(); ?>
                 <label><?= get_string('user_2', 'report_vpl_analytics') ?></label>
                 <select id="compareUser2">
                     <option value="none"><?= get_string('none_selected', 'report_vpl_analytics') ?></option>
+                </select>
+            </div>
+            <div class="vpl-control-group">
+                <label><?= get_string('filter_vpl', 'report_vpl_analytics') ?></label>
+                <select id="compareUsersFilterVpl">
+                    <option value="all"><?= get_string('all_vpls', 'report_vpl_analytics') ?></option>
                 </select>
             </div>
         </div>

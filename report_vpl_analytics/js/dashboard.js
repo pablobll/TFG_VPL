@@ -95,6 +95,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const compareGroup2El = document.getElementById('compareGroup2');
     const compareUser1El = document.getElementById('compareUser1');
     const compareUser2El = document.getElementById('compareUser2');
+    const compareGroupsFilterVplEl = document.getElementById('compareGroupsFilterVpl');
+    const compareUsersFilterVplEl = document.getElementById('compareUsersFilterVpl');
     
     const zoomOptions = {
         pan: { enabled: true, mode: 'xy' },
@@ -166,55 +168,64 @@ document.addEventListener('DOMContentLoaded', function() {
         compareUser2El.appendChild(opt2);
     });
 
-    if (rawData.vpls) {
-        const categories = [
-            { id: 'cat_graded', text: lang.cat_graded },
-            { id: 'cat_ungraded', text: lang.cat_ungraded },
-            { id: 'cat_open', text: lang.cat_open },
-            { id: 'cat_closed', text: lang.cat_closed },
-            { id: 'cat_group', text: lang.cat_group },
-            { id: 'cat_individual', text: lang.cat_individual }
-        ];
-        
-        categories.forEach(c => {
-            let opt = document.createElement('option');
-            opt.value = c.id; opt.innerText = c.text;
-            filterVplEl.appendChild(opt);
-        });
+    function populateVplSelect(selectEl) {
+        while (selectEl.options.length > 1) selectEl.remove(1);
 
-        let sep = document.createElement('option');
-        sep.disabled = true; sep.innerText = '──────────';
-        filterVplEl.appendChild(sep);
+        if (rawData.vpls) {
+            const categories = [
+                { id: 'cat_graded', text: lang.cat_graded },
+                { id: 'cat_ungraded', text: lang.cat_ungraded },
+                { id: 'cat_open', text: lang.cat_open },
+                { id: 'cat_closed', text: lang.cat_closed },
+                { id: 'cat_group', text: lang.cat_group },
+                { id: 'cat_individual', text: lang.cat_individual }
+            ];
+            categories.forEach(c =>
+                selectEl.appendChild(Object.assign(document.createElement('option'), { value: c.id, innerText: c.text }))
+            );
 
-        let sections = {};
-        rawData.vpls.forEach(v => {
-            if (!sections[v.section]) sections[v.section] = [];
-            sections[v.section].push(v);
-        });
-        
-        Object.keys(sections).forEach(secName => {
-            let secOpt = document.createElement('option');
-            secOpt.value = 'sec_' + secName;
-            secOpt.innerText = secName;
-            secOpt.style.fontWeight = 'bold';
-            filterVplEl.appendChild(secOpt);
-            
-            sections[secName].forEach(v => {
-                let opt = document.createElement('option');
-                opt.value = v.id; 
-                opt.textContent = '\u00A0\u00A0\u00A0\u00A0' + v.name;
-                filterVplEl.appendChild(opt);
+            let sep = document.createElement('option');
+            sep.disabled = true; sep.innerText = '──────────';
+            selectEl.appendChild(sep);
+
+            let sections = {};
+            rawData.vpls.forEach(v => { if (!sections[v.section]) sections[v.section] = []; sections[v.section].push(v); });
+            Object.keys(sections).forEach(secName => {
+                let secOpt = document.createElement('option');
+                secOpt.value = 'sec_' + secName; secOpt.innerText = secName; secOpt.style.fontWeight = 'bold';
+                selectEl.appendChild(secOpt);
+                sections[secName].forEach(v => {
+                    let opt = document.createElement('option');
+                    opt.value = v.id; opt.textContent = '\u00A0\u00A0\u00A0\u00A0' + v.name;
+                    selectEl.appendChild(opt);
+                });
             });
-        });
-    } else {
-        let uniqueVpls = {};
-        rawData.submissions.forEach(s => { uniqueVpls[s.vpl] = s.vpl_name; });
-        Object.keys(uniqueVpls).forEach(vplId => {
-            let opt = document.createElement('option');
-            opt.value = vplId; opt.innerText = uniqueVpls[vplId];
-            filterVplEl.appendChild(opt);
-        });
+        } else {
+            let uniqueVpls = {};
+            rawData.submissions.forEach(s => { uniqueVpls[s.vpl] = s.vpl_name; });
+            Object.keys(uniqueVpls).forEach(vplId =>
+                selectEl.appendChild(Object.assign(document.createElement('option'), { value: vplId, innerText: uniqueVpls[vplId] }))
+            );
+        }
     }
+    function filterByVpl(subs, vplId) {
+        if (!vplId || vplId === 'all') return subs;
+        if (vplId === 'cat_graded') return subs.filter(s => vplDict[s.vpl] && vplDict[s.vpl].graded);
+        if (vplId === 'cat_ungraded') return subs.filter(s => vplDict[s.vpl] && !vplDict[s.vpl].graded);
+        if (vplId === 'cat_open') return subs.filter(s => vplDict[s.vpl] && !vplDict[s.vpl].closed);
+        if (vplId === 'cat_closed') return subs.filter(s => vplDict[s.vpl] && vplDict[s.vpl].closed);
+        if (vplId === 'cat_group') return subs.filter(s => vplDict[s.vpl] && vplDict[s.vpl].is_group);
+        if (vplId === 'cat_individual') return subs.filter(s => vplDict[s.vpl] && !vplDict[s.vpl].is_group);
+        if (vplId.startsWith('sec_')) {
+            const targetSec = vplId.substring(4);
+            return subs.filter(s => vplDict[s.vpl] && vplDict[s.vpl].section === targetSec);
+        }
+        return subs.filter(s => s.vpl == vplId);
+    }
+
+    populateVplSelect(filterVplEl);
+    populateVplSelect(compareGroupsFilterVplEl);
+    populateVplSelect(compareUsersFilterVplEl);
 
     analysisModeEl.addEventListener('change', () => {
         panelGlobal.style.display = 'none';
@@ -236,7 +247,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const filterDateFromEl = document.getElementById('filterDateFrom');
     const filterDateToEl = document.getElementById('filterDateTo');
     
-    [chartTypeEl, filterGroupEl, filterVplEl, compareGroup1El, compareGroup2El, compareUser1El, compareUser2El, filterDateFromEl, filterDateToEl].forEach(el => el.addEventListener('change', updateDashboard));
+    [chartTypeEl, filterGroupEl, filterVplEl, compareGroup1El, compareGroup2El, compareUser1El, compareUser2El, filterDateFromEl, filterDateToEl, compareGroupsFilterVplEl, compareUsersFilterVplEl].forEach(el => el.addEventListener('change', updateDashboard));
 
     function updateDashboard() {
         const heatOption = Array.from(chartTypeEl.options).find(opt => opt.value === 'heatmap_tiempo');
@@ -251,7 +262,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const mode = analysisModeEl.value;
         const type = chartTypeEl.value;
-        const vplId = filterVplEl.value;
 
         let baseFiltered = rawData.submissions;
         
@@ -259,27 +269,6 @@ document.addEventListener('DOMContentLoaded', function() {
         let tsTo = filterDateToEl.value ? new Date(filterDateToEl.value).getTime() / 1000 + 86399 : Infinity;
         if (tsFrom > 0 || tsTo < Infinity) {
             baseFiltered = baseFiltered.filter(s => s.datesubmitted >= tsFrom && s.datesubmitted <= tsTo);
-        }
-
-        if (vplId !== 'all') {
-            if (vplId === 'cat_graded') {
-                baseFiltered = baseFiltered.filter(s => vplDict[s.vpl] && vplDict[s.vpl].graded);
-            } else if (vplId === 'cat_ungraded') {
-                baseFiltered = baseFiltered.filter(s => vplDict[s.vpl] && !vplDict[s.vpl].graded);
-            } else if (vplId === 'cat_open') {
-                baseFiltered = baseFiltered.filter(s => vplDict[s.vpl] && !vplDict[s.vpl].closed);
-            } else if (vplId === 'cat_closed') {
-                baseFiltered = baseFiltered.filter(s => vplDict[s.vpl] && vplDict[s.vpl].closed);
-            } else if (vplId === 'cat_group') {
-                baseFiltered = baseFiltered.filter(s => vplDict[s.vpl] && vplDict[s.vpl].is_group);
-            } else if (vplId === 'cat_individual') {
-                baseFiltered = baseFiltered.filter(s => vplDict[s.vpl] && !vplDict[s.vpl].is_group);
-            } else if (vplId.startsWith('sec_')) {
-                const targetSec = vplId.substring(4);
-                baseFiltered = baseFiltered.filter(s => vplDict[s.vpl] && vplDict[s.vpl].section === targetSec);
-            } else {
-                baseFiltered = baseFiltered.filter(s => s.vpl == vplId);
-            }
         }
 
         let datasetsInfo = [];
@@ -293,7 +282,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (chartTypeEl.parentElement) chartTypeEl.parentElement.style.display = 'none';
             
             const groupId = filterGroupEl.value;
-            let finalData = baseFiltered;
+            let finalData = filterByVpl(baseFiltered, filterVplEl.value);
             if (groupId !== 'all') {
                 const gid = parseInt(groupId);
                 finalData = finalData.filter(s => s.user_groups && s.user_groups.includes(gid));
@@ -311,7 +300,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if (mode === 'global') {
             const groupId = filterGroupEl.value;
-            let finalData = baseFiltered;
+            let finalData = filterByVpl(baseFiltered, filterVplEl.value);
             let currentTotalStudents = rawData.total_students;
             
             if (groupId !== 'all') {
@@ -341,18 +330,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 document.querySelector('.vpl-kpi-container').style.display = 'none';
                 return;
             }
-            
+
+            let cgFiltered = filterByVpl(baseFiltered, compareGroupsFilterVplEl.value);
             let combined = [];
             let allowedGroups = [];
             
             if (gid1 !== 'none') {
-                let d1 = baseFiltered.filter(s => s.user_groups && s.user_groups.some(g => g == gid1));
+                let d1 = cgFiltered.filter(s => s.user_groups && s.user_groups.some(g => g == gid1));
                 datasetsInfo.push({ label: groupMap[gid1] || lang.label_group + ' ' + gid1, data: d1, color: primaryColor });
                 combined.push(...d1);
                 allowedGroups.push(gid1);
             }
             if (gid2 !== 'none') {
-                let d2 = baseFiltered.filter(s => s.user_groups && s.user_groups.some(g => g == gid2));
+                let d2 = cgFiltered.filter(s => s.user_groups && s.user_groups.some(g => g == gid2));
                 datasetsInfo.push({ label: groupMap[gid2] || lang.label_group + ' ' + gid2, data: d2, color: secondaryColor });
                 combined.push(...d2);
                 allowedGroups.push(gid2);
@@ -388,19 +378,21 @@ document.addEventListener('DOMContentLoaded', function() {
                 document.querySelector('.vpl-kpi-container').style.display = 'none';
                 return;
             }
+
+            let cuFiltered = filterByVpl(baseFiltered, compareUsersFilterVplEl.value);
             let combined = [];
             let allowedUsersList = [];
             
             if (uid1 !== 'none') {
                 let uName1 = rawData.user_names_map && rawData.user_names_map[uid1] ? rawData.user_names_map[uid1] : uid1;
-                let d1 = baseFiltered.filter(s => s.userid == uid1);
+                let d1 = cuFiltered.filter(s => s.userid == uid1);
                 datasetsInfo.push({ label: uName1, data: d1, color: primaryColor });
                 combined.push(...d1);
                 allowedUsersList.push(uid1);
             }
             if (uid2 !== 'none') {
                 let uName2 = rawData.user_names_map && rawData.user_names_map[uid2] ? rawData.user_names_map[uid2] : uid2;
-                let d2 = baseFiltered.filter(s => s.userid == uid2);
+                let d2 = cuFiltered.filter(s => s.userid == uid2);
                 datasetsInfo.push({ label: uName2, data: d2, color: secondaryColor });
                 combined.push(...d2);
                 allowedUsersList.push(uid2);
@@ -517,7 +509,13 @@ document.addEventListener('DOMContentLoaded', function() {
         const tbody = document.getElementById('dataTableBody');
         tbody.innerHTML = '';
         
-        let isSpecificVpl = !isNaN(parseInt(filterVplEl.value)) && !filterVplEl.value.startsWith('cat_') && !filterVplEl.value.startsWith('sec_') && filterVplEl.value !== 'all';
+        let activeVplVal = filterVplEl.value;
+        if (analysisModeEl.value === 'compare_groups') {
+            activeVplVal = compareGroupsFilterVplEl.value;
+        } else if (analysisModeEl.value === 'compare_users') {
+            activeVplVal = compareUsersFilterVplEl.value;
+        }
+        let isSpecificVpl = !isNaN(parseInt(activeVplVal)) && !activeVplVal.startsWith('cat_') && !activeVplVal.startsWith('sec_') && activeVplVal !== 'all';
 
         function getStudentRowMeta(uid, st) {
             let uName = rawData.user_names_map && rawData.user_names_map[uid] ? rawData.user_names_map[uid] : uid;
