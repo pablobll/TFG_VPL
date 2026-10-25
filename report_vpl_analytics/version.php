@@ -18,7 +18,7 @@
  * VPL Analytics Dashboard
  *
  * @package    report_vpl_analytics
- * @copyright  2024 Pablobll
+ * @copyright  2026 Pablobll
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
