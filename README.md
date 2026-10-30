@@ -18,7 +18,7 @@ El panel calcula en tiempo real varias estadísticas útiles sin llegar a sobrec
 
 ## Requisitos para usarlo
 
-*   Requiere Moodle 4.3 o superior. El desarrollo principal se realizó sobre Moodle 4.4 con PHP 8.1. No instalar Moodle 5.2 o superior porque requiere PHP 8.3.
+*   Versión mínima declarada: Moodle 4.3. El plugin se ha desarrollado y probado únicamente en Moodle 4.4 con PHP 8.1. No instalar Moodle 5.2 o superior porque requiere PHP 8.3.
 *   El módulo VPL (mod_vpl) instalado previamente en el servidor.
 
 ## Notas sobre la arquitectura y el código
