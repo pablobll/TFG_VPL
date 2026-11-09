@@ -6,8 +6,23 @@ document.addEventListener('DOMContentLoaded', function() {
     const passThresh = (rawData.settings && rawData.settings.pass_threshold !== undefined) ? parseFloat(rawData.settings.pass_threshold) : 0.5;
     const excThresh = (rawData.settings && rawData.settings.exc_threshold !== undefined) ? parseFloat(rawData.settings.exc_threshold) : 0.9;
     
+    const gradeScaleEl = document.getElementById('settingGradeScale');
+    const letterRangesEl = document.getElementById('letterRangesContainer');
+
+    let confirmedSettings = {
+        scale: gradeScaleEl ? gradeScaleEl.value : '10',
+        stagEvals: parseInt(document.getElementById('settingStagnantEvals').value, 10) || 15,
+        stagGrade: parseFloat(document.getElementById('settingStagnantGrade').value) || 5.0,
+        procInitHours: parseFloat(document.getElementById('settingProcInitHours').value) || 48,
+        procFinalHours: parseFloat(document.getElementById('settingProcFinalHours').value) || 2,
+        letterA: parseInt(document.getElementById('settingLetterA').value, 10) || 9,
+        letterB: parseInt(document.getElementById('settingLetterB').value, 10) || 8,
+        letterC: parseInt(document.getElementById('settingLetterC').value, 10) || 7,
+        letterD: parseInt(document.getElementById('settingLetterD').value, 10) || 6
+    };
+
     function getSelectedScale() {
-        return document.getElementById('settingGradeScale').value || '10';
+        return confirmedSettings.scale;
     }
 
     function escapeHTML(str) {
@@ -26,10 +41,10 @@ document.addEventListener('DOMContentLoaded', function() {
         if (scale === '100') {
             return (normalizedGrade * 100).toFixed(1);
         } else if (scale === 'letters') {
-            let vA = parseInt(document.getElementById('settingLetterA').value, 10); let tA = (isNaN(vA) ? 9 : vA) / 10;
-            let vB = parseInt(document.getElementById('settingLetterB').value, 10); let tB = (isNaN(vB) ? 8 : vB) / 10;
-            let vC = parseInt(document.getElementById('settingLetterC').value, 10); let tC = (isNaN(vC) ? 7 : vC) / 10;
-            let vD = parseInt(document.getElementById('settingLetterD').value, 10); let tD = (isNaN(vD) ? 6 : vD) / 10;
+            let tA = confirmedSettings.letterA / 10;
+            let tB = confirmedSettings.letterB / 10;
+            let tC = confirmedSettings.letterC / 10;
+            let tD = confirmedSettings.letterD / 10;
             if (normalizedGrade >= tA) return 'A';
             if (normalizedGrade >= tB) return 'B';
             if (normalizedGrade >= tC) return 'C';
@@ -48,9 +63,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function getNormalizedStagnantGrade() {
-        let stagVal = parseFloat(document.getElementById('settingStagnantGrade').value) || 5.0;
-        let scale = getSelectedScale();
-        if (scale === '100') return stagVal / 100.0;
+        let stagVal = confirmedSettings.stagGrade;
+        if (confirmedSettings.scale === '100') return stagVal / 100.0;
         return stagVal / 10.0;
     }
 
@@ -70,7 +84,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 let groupMembers = rawData.users.filter(uid => rawData.user_groups_map[uid] && rawData.user_groups_map[uid].includes(s.groupid));
                 if (groupMembers.length > 0) {
                     groupMembers.forEach(uid => {
-                        expandedSubmissions.push({ ...s, id: s.id + '_' + uid, userid: uid });
+                        expandedSubmissions.push({ ...s, id: s.id + '_' + uid, userid: uid, user_groups: rawData.user_groups_map[uid] || [0] });
                     });
                 } else {
                     expandedSubmissions.push(s);
@@ -113,16 +127,39 @@ document.addEventListener('DOMContentLoaded', function() {
         if (currentChart && typeof currentChart.resetZoom === 'function') currentChart.resetZoom();
     });
     
-    document.getElementById('btnSettings').addEventListener('click', () => document.getElementById('settingsModal').style.display = 'flex');
-    document.getElementById('btnSettingsCancel').addEventListener('click', () => document.getElementById('settingsModal').style.display = 'none');
+    let modalPrevScale = confirmedSettings.scale;
+    function syncModalInputsFromSettings() {
+        gradeScaleEl.value = confirmedSettings.scale;
+        document.getElementById('settingStagnantEvals').value = confirmedSettings.stagEvals;
+        document.getElementById('settingStagnantGrade').value = confirmedSettings.stagGrade;
+        document.getElementById('settingStagnantGrade').step = confirmedSettings.scale === '100' ? '1' : '0.1';
+        document.getElementById('settingProcInitHours').value = confirmedSettings.procInitHours;
+        document.getElementById('settingProcFinalHours').value = confirmedSettings.procFinalHours;
+        document.getElementById('settingLetterA').value = confirmedSettings.letterA;
+        document.getElementById('settingLetterB').value = confirmedSettings.letterB;
+        document.getElementById('settingLetterC').value = confirmedSettings.letterC;
+        document.getElementById('settingLetterD').value = confirmedSettings.letterD;
+        letterRangesEl.style.display = confirmedSettings.scale === 'letters' ? 'block' : 'none';
+        modalPrevScale = confirmedSettings.scale;
+    }
+
+    document.getElementById('btnSettings').addEventListener('click', () => {
+        syncModalInputsFromSettings();
+        document.getElementById('settingsModal').style.display = 'flex';
+    });
+    document.getElementById('btnSettingsCancel').addEventListener('click', () => {
+        syncModalInputsFromSettings();
+        document.getElementById('settingsModal').style.display = 'none';
+    });
     document.getElementById('btnSettingsSave').addEventListener('click', () => {
-        if (gradeScaleEl.value === 'letters') {
-            let vA = parseInt(document.getElementById('settingLetterA').value, 10); let tA = isNaN(vA) ? 9 : vA;
-            let vB = parseInt(document.getElementById('settingLetterB').value, 10); let tB = isNaN(vB) ? 8 : vB;
-            let vC = parseInt(document.getElementById('settingLetterC').value, 10); let tC = isNaN(vC) ? 7 : vC;
-            let vD = parseInt(document.getElementById('settingLetterD').value, 10); let tD = isNaN(vD) ? 6 : vD;
+        let newScale = gradeScaleEl.value;
+        let vA = parseInt(document.getElementById('settingLetterA').value, 10); let tA = isNaN(vA) ? 9 : vA;
+        let vB = parseInt(document.getElementById('settingLetterB').value, 10); let tB = isNaN(vB) ? 8 : vB;
+        let vC = parseInt(document.getElementById('settingLetterC').value, 10); let tC = isNaN(vC) ? 7 : vC;
+        let vD = parseInt(document.getElementById('settingLetterD').value, 10); let tD = isNaN(vD) ? 6 : vD;
+        if (newScale === 'letters') {
             if (tA > 10 || tB > 10 || tC > 10 || tD > 10) {
-                alert("Error: El valor máximo permitido es 10.");
+                alert(lang.error_max_letter_range || "Error: The maximum allowed value is 10.");
                 return;
             }
             if (!(tA > tB && tB > tC && tC > tD)) {
@@ -130,14 +167,41 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
         }
+        let stagVal = parseFloat(document.getElementById('settingStagnantGrade').value);
+        if (isNaN(stagVal) || stagVal < 0) {
+            stagVal = newScale === '100' ? 50 : 5.0;
+        }
+
+        confirmedSettings.scale = newScale;
+        confirmedSettings.stagEvals = parseInt(document.getElementById('settingStagnantEvals').value, 10) || 15;
+        confirmedSettings.stagGrade = stagVal;
+        confirmedSettings.procInitHours = parseFloat(document.getElementById('settingProcInitHours').value) || 48;
+        confirmedSettings.procFinalHours = parseFloat(document.getElementById('settingProcFinalHours').value) || 2;
+        confirmedSettings.letterA = tA;
+        confirmedSettings.letterB = tB;
+        confirmedSettings.letterC = tC;
+        confirmedSettings.letterD = tD;
+
         document.getElementById('settingsModal').style.display = 'none';
         updateDashboard();
     });
 
-    const gradeScaleEl = document.getElementById('settingGradeScale');
-    const letterRangesEl = document.getElementById('letterRangesContainer');
     gradeScaleEl.addEventListener('change', () => {
-        letterRangesEl.style.display = gradeScaleEl.value === 'letters' ? 'block' : 'none';
+        let newScale = gradeScaleEl.value;
+        letterRangesEl.style.display = newScale === 'letters' ? 'block' : 'none';
+
+        let stagInput = document.getElementById('settingStagnantGrade');
+        let currentVal = parseFloat(stagInput.value);
+        if (!isNaN(currentVal)) {
+            if (modalPrevScale === '100' && (newScale === '10' || newScale === 'letters')) {
+                stagInput.value = (currentVal / 10).toFixed(1);
+                stagInput.step = '0.1';
+            } else if ((modalPrevScale === '10' || modalPrevScale === 'letters') && newScale === '100') {
+                stagInput.value = Math.round(currentVal * 10);
+                stagInput.step = '1';
+            }
+        }
+        modalPrevScale = newScale;
     });
     letterRangesEl.style.display = gradeScaleEl.value === 'letters' ? 'block' : 'none';
 
@@ -265,8 +329,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
         let baseFiltered = rawData.submissions;
         
-        let tsFrom = filterDateFromEl.value ? new Date(filterDateFromEl.value).getTime() / 1000 : 0;
-        let tsTo = filterDateToEl.value ? new Date(filterDateToEl.value).getTime() / 1000 + 86399 : Infinity;
+        let tsFrom = 0;
+        if (filterDateFromEl.value) {
+            let p = filterDateFromEl.value.split('-').map(Number);
+            tsFrom = Math.floor(new Date(p[0], p[1] - 1, p[2], 0, 0, 0, 0).getTime() / 1000);
+        }
+        let tsTo = Infinity;
+        if (filterDateToEl.value) {
+            let p = filterDateToEl.value.split('-').map(Number);
+            tsTo = Math.floor(new Date(p[0], p[1] - 1, p[2], 23, 59, 59, 999).getTime() / 1000);
+        }
         if (tsFrom > 0 || tsTo < Infinity) {
             baseFiltered = baseFiltered.filter(s => s.datesubmitted >= tsFrom && s.datesubmitted <= tsTo);
         }
@@ -526,10 +598,10 @@ document.addEventListener('DOMContentLoaded', function() {
             let totalRuns = 0;
             let totalEvals = 0;
             let totalDebugs = 0;
-            let stagEvals = parseInt(document.getElementById('settingStagnantEvals').value) || 15;
+            let stagEvals = confirmedSettings.stagEvals;
             let stagGrade = getNormalizedStagnantGrade();
-            let procInitHours = parseFloat(document.getElementById('settingProcInitHours').value) || 48;
-            let procFinalHours = parseFloat(document.getElementById('settingProcFinalHours').value) || 2;
+            let procInitHours = confirmedSettings.procInitHours;
+            let procFinalHours = confirmedSettings.procFinalHours;
             
             if (st.vplMaxEffort) {
                 Object.keys(st.vplMaxEffort).forEach(vplId => {
@@ -761,7 +833,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
             });
             
-            let daysArr = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+            let daysArr = lang.days_short || ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
             let html = '<table style=\'width:100%; border-collapse:collapse; text-align:center; font-size:12px; font-family:sans-serif;\'>';
             html += '<tr><th></th>';
             for(let h=0; h<24; h++) html += '<th style=\'padding:4px; color:#6c757d;\'>' + h + 'h</th>';
@@ -800,6 +872,10 @@ document.addEventListener('DOMContentLoaded', function() {
         if (type === 'rendimiento') {
             let scale = getSelectedScale();
             let binKeys = [];
+            let tA = confirmedSettings.letterA / 10;
+            let tB = confirmedSettings.letterB / 10;
+            let tC = confirmedSettings.letterC / 10;
+            let tD = confirmedSettings.letterD / 10;
             if (scale === '100') {
                 binKeys = ['0-20', '20-40', '40-50', '50-70', '70-90', '90-100'];
             } else if (scale === 'letters') {
@@ -831,10 +907,10 @@ document.addEventListener('DOMContentLoaded', function() {
                         else if (grade < 0.9) ranges['70-90']++;
                         else ranges['90-100']++;
                     } else if (scale === 'letters') {
-                        if (grade < 0.6) ranges['F']++;
-                        else if (grade < 0.7) ranges['D']++;
-                        else if (grade < 0.8) ranges['C']++;
-                        else if (grade < 0.9) ranges['B']++;
+                        if (grade < tD) ranges['F']++;
+                        else if (grade < tC) ranges['D']++;
+                        else if (grade < tB) ranges['C']++;
+                        else if (grade < tA) ranges['B']++;
                         else ranges['A']++;
                     } else {
                         if (grade < 0.2) ranges['0-2']++;
@@ -980,13 +1056,14 @@ document.addEventListener('DOMContentLoaded', function() {
             if (i > 0 && rows[i].style.display === 'none') continue;
             
             for (let j = 0; j < cols.length; j++) {
-                let data = cols[j].innerText.replace(/(\\r\\n|\\n|\\r)/gm, ' ').replace(/\"/g, '\"\"');
-                row.push('\"' + data + '\"');
+                if (cols[j].style.display === 'none' || window.getComputedStyle(cols[j]).display === 'none') continue;
+                let data = cols[j].innerText.replace(/[\r\n]+/g, ' ').replace(/"/g, '""');
+                row.push('"' + data + '"');
             }
             csv.push(row.join(','));
         }
         
-        let csvFile = new Blob([csv.join('\r\n')], {type: 'text/csv;charset=utf-8;'});
+        let csvFile = new Blob(['\uFEFF' + csv.join('\r\n')], {type: 'text/csv;charset=utf-8;'});
         let downloadLink = document.createElement('a');
         downloadLink.download = 'vpl_analytics_export.csv';
         downloadLink.href = window.URL.createObjectURL(csvFile);

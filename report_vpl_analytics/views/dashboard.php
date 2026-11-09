@@ -76,9 +76,9 @@ defined('MOODLE_INTERNAL') || die(); ?>
             <div class="vpl-control-group">
                 <label><?= get_string('chart_type', 'report_vpl_analytics') ?> <span title="<?= get_string('tooltip_chart_type', 'report_vpl_analytics') ?>">(?)</span></label>
                 <select id="chartType">
-                    <option value="rendimiento"><?= get_string('chart_rendimiento', 'report_vpl_analytics') ?></option>
-                    <option value="evolucion"><?= get_string('chart_evolucion', 'report_vpl_analytics') ?></option>
-                    <option value="esfuerzo"><?= get_string('chart_esfuerzo', 'report_vpl_analytics') ?></option>
+                    <option value="rendimiento"><?= get_string('chart_performance', 'report_vpl_analytics') ?></option>
+                    <option value="evolucion"><?= get_string('chart_evolution', 'report_vpl_analytics') ?></option>
+                    <option value="esfuerzo"><?= get_string('chart_effort', 'report_vpl_analytics') ?></option>
                     <option value="heatmap_tiempo"><?= get_string('chart_heatmap', 'report_vpl_analytics') ?></option>
                 </select>
             </div>
@@ -160,7 +160,7 @@ defined('MOODLE_INTERNAL') || die(); ?>
         <div id="zoomControls" style="position:absolute; top: 15px; right: 20px; display:flex; gap: 8px; z-index: 10; display:none;">
             <button type="button" id="btnZoomIn" style="padding: 6px 12px; background: #e9ecef; color: #212529; border: 1px solid #ced4da; border-radius: 4px; cursor: pointer; font-weight:bold;">+</button>
             <button type="button" id="btnZoomOut" style="padding: 6px 12px; background: #e9ecef; color: #212529; border: 1px solid #ced4da; border-radius: 4px; cursor: pointer; font-weight:bold;">-</button>
-            <button type="button" id="btnZoomReset" style="padding: 6px 12px; background: #e9ecef; color: #212529; border: 1px solid #ced4da; border-radius: 4px; cursor: pointer;">Reset</button>
+            <button type="button" id="btnZoomReset" style="padding: 6px 12px; background: #e9ecef; color: #212529; border: 1px solid #ced4da; border-radius: 4px; cursor: pointer;"><?= get_string('zoom_reset', 'report_vpl_analytics') ?></button>
         </div>
         <div id="chartScrollWrapper" style="width: 100%; height: 100%; overflow-x: auto; overflow-y: hidden;">
             <div id="chartInner" style="height: 100%; min-width: 100%; position: relative;">
