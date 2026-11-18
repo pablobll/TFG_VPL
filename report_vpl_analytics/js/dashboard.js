@@ -21,6 +21,26 @@ document.addEventListener('DOMContentLoaded', function() {
         letterD: parseInt(document.getElementById('settingLetterD').value, 10) || 6
     };
 
+    function generateContinuousDays(startStr, endStr) {
+        if (!startStr || !endStr) return [];
+        let pS = startStr.split('-').map(Number);
+        let pE = endStr.split('-').map(Number);
+        let curr = new Date(pS[0], pS[1] - 1, pS[2]);
+        let end = new Date(pE[0], pE[1] - 1, pE[2]);
+        if (curr > end) return [];
+        let days = [];
+        let count = 0;
+        while (curr <= end && count < 4000) {
+            let y = curr.getFullYear();
+            let m = String(curr.getMonth() + 1).padStart(2, '0');
+            let d = String(curr.getDate()).padStart(2, '0');
+            days.push(y + '-' + m + '-' + d);
+            curr.setDate(curr.getDate() + 1);
+            count++;
+        }
+        return days;
+    }
+
     function getSelectedScale() {
         return confirmedSettings.scale;
     }
@@ -75,6 +95,30 @@ document.addEventListener('DOMContentLoaded', function() {
     const vplDict = {};
     if (rawData.vpls) {
         rawData.vpls.forEach(v => vplDict[v.id] = v);
+    }
+
+    let userVplSubs = {};
+    if (rawData.submissions) {
+        rawData.submissions.forEach(s => {
+            let key = (s.groupid && s.groupid > 0) ? ('grp_' + s.groupid + '_' + s.vpl) : ('usr_' + s.userid + '_' + s.vpl);
+            if (!userVplSubs[key]) userVplSubs[key] = [];
+            userVplSubs[key].push(s);
+        });
+        Object.values(userVplSubs).forEach(list => {
+            list.sort((a, b) => (a.datesubmitted - b.datesubmitted) || (a.id - b.id));
+            let prevRuns = 0, prevEvals = 0, prevDebugs = 0;
+            list.forEach(s => {
+                let r = s.run_count || 0;
+                let e = s.nevaluations || 0;
+                let d = s.debug_count || 0;
+                s.delta_runs = Math.max(0, r - prevRuns);
+                s.delta_evals = Math.max(0, e - prevEvals);
+                s.delta_debugs = Math.max(0, d - prevDebugs);
+                prevRuns = r;
+                prevEvals = e;
+                prevDebugs = d;
+            });
+        });
     }
 
     let expandedSubmissions = [];
@@ -835,13 +879,15 @@ document.addEventListener('DOMContentLoaded', function() {
             
             let daysArr = lang.days_short || ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
             let html = '<table style=\'width:100%; border-collapse:collapse; text-align:center; font-size:12px; font-family:sans-serif;\'>';
-            html += '<tr><th></th>';
+            html += '<tr><th></th><th style=\'padding:6px; font-weight:bold; color:#212529; background:#e9ecef; border:1px solid #ced4da; border-right:2px solid #adb5bd;\'>Total</th>';
             for(let h=0; h<24; h++) html += '<th style=\'padding:4px; color:#6c757d;\'>' + h + 'h</th>';
             html += '</tr>';
             
             let order = [1,2,3,4,5,6,0];
             order.forEach(dayIdx => {
+                let dayTotal = matrix[dayIdx].reduce((a, b) => a + b, 0);
                 html += '<tr><td style=\'font-weight:bold; padding:8px; text-align:right; color:#495057;\'>' + daysArr[dayIdx] + '</td>';
+                html += '<td style=\'background:#f8f9fa; color:#212529; font-weight:bold; padding:8px; border:1px solid #dee2e6; border-right:2px solid #adb5bd;\' title=\'' + dayTotal + ' ' + lang.label_subs.toLowerCase() + '\'>' + dayTotal + '</td>';
                 for(let h=0; h<24; h++) {
                     let val = matrix[dayIdx][h];
                     let intensity = maxVal > 0 ? (val / maxVal) : 0;
@@ -862,8 +908,9 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('customHtmlChart').style.display = 'none';
         document.getElementById('customHtmlChart').innerHTML = '';
 
+        let isTimelineType = (type === 'evolucion' || type === 'timeline_executions' || type === 'timeline_evaluations' || type === 'timeline_debugs');
         let zoomControls = document.getElementById('zoomControls');
-        if (type === 'esfuerzo' || type === 'evolucion') zoomControls.style.display = 'flex';
+        if (type === 'esfuerzo' || isTimelineType) zoomControls.style.display = 'flex';
         else zoomControls.style.display = 'none';
 
         let chartDatasets = [];
@@ -993,7 +1040,20 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
 
-        } else if (type === 'evolucion') {
+        } else if (isTimelineType) {
+            let yAxisTitle = lang.label_subs;
+            let valGetter = (s) => 1;
+            if (type === 'timeline_executions') {
+                yAxisTitle = lang.label_execs;
+                valGetter = (s) => (s.delta_runs !== undefined ? s.delta_runs : (s.run_count || 0));
+            } else if (type === 'timeline_evaluations') {
+                yAxisTitle = lang.label_evals;
+                valGetter = (s) => (s.delta_evals !== undefined ? s.delta_evals : (s.nevaluations || 0));
+            } else if (type === 'timeline_debugs') {
+                yAxisTitle = lang.col_debugs || 'Debugs';
+                valGetter = (s) => (s.delta_debugs !== undefined ? s.delta_debugs : (s.debug_count || 0));
+            }
+
             let dateSets = datasetsInfo.map(ds => {
                 let dateCounts = {};
                 let processedRealIds = new Set();
@@ -1004,14 +1064,35 @@ document.addEventListener('DOMContentLoaded', function() {
                     let d = jsDate.getFullYear() + '-' + 
                             String(jsDate.getMonth() + 1).padStart(2, '0') + '-' + 
                             String(jsDate.getDate()).padStart(2, '0');
-                    dateCounts[d] = (dateCounts[d] || 0) + 1;
+                    dateCounts[d] = (dateCounts[d] || 0) + valGetter(s);
                 });
                 return dateCounts;
             });
             
             let allDates = new Set();
             dateSets.forEach(dc => Object.keys(dc).forEach(d => allDates.add(d)));
-            commonLabels = Array.from(allDates).sort();
+
+            let startDayStr = filterDateFromEl.value;
+            let endDayStr = filterDateToEl.value;
+
+            if (!startDayStr && allDates.size > 0) {
+                let sorted = Array.from(allDates).sort();
+                startDayStr = sorted[0];
+            }
+            if (!endDayStr && allDates.size > 0) {
+                let sorted = Array.from(allDates).sort();
+                endDayStr = sorted[sorted.length - 1];
+            }
+
+            if (startDayStr && endDayStr) {
+                commonLabels = generateContinuousDays(startDayStr, endDayStr);
+            } else if (startDayStr && !endDayStr) {
+                commonLabels = [startDayStr];
+            } else if (!startDayStr && endDayStr) {
+                commonLabels = [endDayStr];
+            } else {
+                commonLabels = Array.from(allDates).sort();
+            }
 
             chartDatasets = datasetsInfo.map((ds, i) => {
                 let dataPoints = commonLabels.map(d => dateSets[i][d] || 0);
@@ -1030,7 +1111,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 options: {
                     responsive: true,
                     plugins: { legend: { display: false }, zoom: zoomOptions },
-                    scales: { x: { title: {display:false} }, y: { beginAtZero: true, title: {display:true, text:lang.label_subs} } }
+                    scales: { x: { title: {display:false} }, y: { beginAtZero: true, title: {display:true, text:yAxisTitle} } }
                 }
             });
 

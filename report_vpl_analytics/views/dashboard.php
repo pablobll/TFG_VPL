@@ -78,6 +78,9 @@ defined('MOODLE_INTERNAL') || die(); ?>
                 <select id="chartType">
                     <option value="rendimiento"><?= get_string('chart_performance', 'report_vpl_analytics') ?></option>
                     <option value="evolucion"><?= get_string('chart_evolution', 'report_vpl_analytics') ?></option>
+                    <option value="timeline_executions"><?= get_string('chart_timeline_executions', 'report_vpl_analytics') ?></option>
+                    <option value="timeline_evaluations"><?= get_string('chart_timeline_evaluations', 'report_vpl_analytics') ?></option>
+                    <option value="timeline_debugs"><?= get_string('chart_timeline_debugs', 'report_vpl_analytics') ?></option>
                     <option value="esfuerzo"><?= get_string('chart_effort', 'report_vpl_analytics') ?></option>
                     <option value="heatmap_tiempo"><?= get_string('chart_heatmap', 'report_vpl_analytics') ?></option>
                 </select>
