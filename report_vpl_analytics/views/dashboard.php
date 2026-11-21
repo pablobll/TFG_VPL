@@ -204,7 +204,7 @@ defined('MOODLE_INTERNAL') || die(); ?>
 </div>
 
 <div id="settingsModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9999; justify-content:center; align-items:center;">
-    <div style="background:white; padding:20px; border-radius:5px; width:500px; box-shadow:0 4px 12px rgba(0,0,0,0.15);">
+    <div style="background:white; padding:20px; border-radius:5px; width:520px; box-shadow:0 4px 12px rgba(0,0,0,0.15);">
         <h3 style="margin-top:0;"><?= get_string('settings_title', 'report_vpl_analytics') ?></h3>
         <p style="font-size:0.9em; color:#666;"><?= get_string('settings_desc', 'report_vpl_analytics') ?></p>
         <div style="margin-bottom:20px;">
@@ -212,26 +212,42 @@ defined('MOODLE_INTERNAL') || die(); ?>
             <div style="display:flex; gap:10px;">
                 <div style="flex:1;">
                     <small><?= get_string('settings_stagnant_runs', 'report_vpl_analytics') ?></small><br>
-                    <input type="number" id="settingStagnantEvals" value="15" style="width:100%;">
+                    <input type="number" id="settingStagnantEvals" value="15" min="1" style="width:100%;">
                 </div>
                 <div style="flex:1;">
                     <small><?= get_string('settings_stagnant_grade', 'report_vpl_analytics') ?></small><br>
                     <input type="number" id="settingStagnantGrade" value="5.0" step="0.1" style="width:100%;">
                 </div>
+                <div style="flex:1;">
+                    <small><?= get_string('settings_min_activities_pct', 'report_vpl_analytics') ?></small><br>
+                    <input type="number" id="settingStagnantActPct" value="50" min="1" max="100" step="1" style="width:100%;">
+                </div>
             </div>
         </div>
         <div style="margin-bottom:20px;">
             <label style="display:block; margin-bottom:5px; font-weight:bold;"><?= get_string('settings_proc_init', 'report_vpl_analytics') ?></label>
-            <div>
-                <small><?= get_string('settings_proc_init_hours', 'report_vpl_analytics') ?></small><br>
-                <input type="number" id="settingProcInitHours" value="48" style="width:100%;">
+            <div style="display:flex; gap:10px;">
+                <div style="flex:1;">
+                    <small><?= get_string('settings_proc_init_hours', 'report_vpl_analytics') ?></small><br>
+                    <input type="number" id="settingProcInitHours" value="48" min="1" style="width:100%;">
+                </div>
+                <div style="flex:1;">
+                    <small><?= get_string('settings_min_activities_pct', 'report_vpl_analytics') ?></small><br>
+                    <input type="number" id="settingProcInitActPct" value="50" min="1" max="100" step="1" style="width:100%;">
+                </div>
             </div>
         </div>
         <div style="margin-bottom:20px;">
             <label style="display:block; margin-bottom:5px; font-weight:bold;"><?= get_string('settings_proc_final', 'report_vpl_analytics') ?></label>
-            <div>
-                <small><?= get_string('settings_proc_final_hours', 'report_vpl_analytics') ?></small><br>
-                <input type="number" id="settingProcFinalHours" value="2" style="width:100%;">
+            <div style="display:flex; gap:10px;">
+                <div style="flex:1;">
+                    <small><?= get_string('settings_proc_final_hours', 'report_vpl_analytics') ?></small><br>
+                    <input type="number" id="settingProcFinalHours" value="2" min="1" style="width:100%;">
+                </div>
+                <div style="flex:1;">
+                    <small><?= get_string('settings_min_activities_pct', 'report_vpl_analytics') ?></small><br>
+                    <input type="number" id="settingProcFinalActPct" value="50" min="1" max="100" step="1" style="width:100%;">
+                </div>
             </div>
         </div>
         <div style="margin-bottom:20px;">

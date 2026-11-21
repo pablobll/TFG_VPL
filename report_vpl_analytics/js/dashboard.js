@@ -13,13 +13,39 @@ document.addEventListener('DOMContentLoaded', function() {
         scale: gradeScaleEl ? gradeScaleEl.value : '10',
         stagEvals: parseInt(document.getElementById('settingStagnantEvals').value, 10) || 15,
         stagGrade: parseFloat(document.getElementById('settingStagnantGrade').value) || 5.0,
+        stagActPct: parseInt(document.getElementById('settingStagnantActPct').value, 10) || 50,
         procInitHours: parseFloat(document.getElementById('settingProcInitHours').value) || 48,
+        procInitActPct: parseInt(document.getElementById('settingProcInitActPct').value, 10) || 50,
         procFinalHours: parseFloat(document.getElementById('settingProcFinalHours').value) || 2,
+        procFinalActPct: parseInt(document.getElementById('settingProcFinalActPct').value, 10) || 50,
         letterA: parseInt(document.getElementById('settingLetterA').value, 10) || 9,
         letterB: parseInt(document.getElementById('settingLetterB').value, 10) || 8,
         letterC: parseInt(document.getElementById('settingLetterC').value, 10) || 7,
         letterD: parseInt(document.getElementById('settingLetterD').value, 10) || 6
     };
+
+    function clampPct(v, def) {
+        let n = parseInt(v, 10);
+        if (isNaN(n) || n < 1) return 1;
+        if (n > 100) return 100;
+        return n;
+    }
+
+    function getFilteredVplsList(vplFilterVal) {
+        if (!rawData.vpls || rawData.vpls.length === 0) return [];
+        if (!vplFilterVal || vplFilterVal === 'all') return rawData.vpls;
+        if (vplFilterVal === 'cat_graded') return rawData.vpls.filter(v => v.graded);
+        if (vplFilterVal === 'cat_ungraded') return rawData.vpls.filter(v => !v.graded);
+        if (vplFilterVal === 'cat_open') return rawData.vpls.filter(v => !v.closed);
+        if (vplFilterVal === 'cat_closed') return rawData.vpls.filter(v => v.closed);
+        if (vplFilterVal === 'cat_group') return rawData.vpls.filter(v => v.is_group);
+        if (vplFilterVal === 'cat_individual') return rawData.vpls.filter(v => !v.is_group);
+        if (vplFilterVal.startsWith('sec_')) {
+            const targetSec = vplFilterVal.substring(4);
+            return rawData.vpls.filter(v => v.section === targetSec);
+        }
+        return rawData.vpls.filter(v => v.id == vplFilterVal);
+    }
 
     function generateContinuousDays(startStr, endStr) {
         if (!startStr || !endStr) return [];
@@ -177,8 +203,11 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('settingStagnantEvals').value = confirmedSettings.stagEvals;
         document.getElementById('settingStagnantGrade').value = confirmedSettings.stagGrade;
         document.getElementById('settingStagnantGrade').step = confirmedSettings.scale === '100' ? '1' : '0.1';
+        document.getElementById('settingStagnantActPct').value = confirmedSettings.stagActPct;
         document.getElementById('settingProcInitHours').value = confirmedSettings.procInitHours;
+        document.getElementById('settingProcInitActPct').value = confirmedSettings.procInitActPct;
         document.getElementById('settingProcFinalHours').value = confirmedSettings.procFinalHours;
+        document.getElementById('settingProcFinalActPct').value = confirmedSettings.procFinalActPct;
         document.getElementById('settingLetterA').value = confirmedSettings.letterA;
         document.getElementById('settingLetterB').value = confirmedSettings.letterB;
         document.getElementById('settingLetterC').value = confirmedSettings.letterC;
@@ -219,8 +248,11 @@ document.addEventListener('DOMContentLoaded', function() {
         confirmedSettings.scale = newScale;
         confirmedSettings.stagEvals = parseInt(document.getElementById('settingStagnantEvals').value, 10) || 15;
         confirmedSettings.stagGrade = stagVal;
+        confirmedSettings.stagActPct = clampPct(document.getElementById('settingStagnantActPct').value, 50);
         confirmedSettings.procInitHours = parseFloat(document.getElementById('settingProcInitHours').value) || 48;
+        confirmedSettings.procInitActPct = clampPct(document.getElementById('settingProcInitActPct').value, 50);
         confirmedSettings.procFinalHours = parseFloat(document.getElementById('settingProcFinalHours').value) || 2;
+        confirmedSettings.procFinalActPct = clampPct(document.getElementById('settingProcFinalActPct').value, 50);
         confirmedSettings.letterA = tA;
         confirmedSettings.letterB = tB;
         confirmedSettings.letterC = tC;
@@ -633,12 +665,17 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         let isSpecificVpl = !isNaN(parseInt(activeVplVal)) && !activeVplVal.startsWith('cat_') && !activeVplVal.startsWith('sec_') && activeVplVal !== 'all';
 
+        const currentFilteredVpls = getFilteredVplsList(activeVplVal);
+        const totalFilteredCount = currentFilteredVpls.length;
+        const dueFilteredVpls = currentFilteredVpls.filter(v => v.duedate && v.duedate > 0);
+        const totalDueCount = dueFilteredVpls.length;
+
         function getStudentRowMeta(uid, st) {
             let uName = rawData.user_names_map && rawData.user_names_map[uid] ? rawData.user_names_map[uid] : uid;
             let uLink = '<a href="../../user/view.php?id=' + uid + '&course=' + window.VplAnalyticsCourseId + '" target="_blank" style="text-decoration:none; color:#007bff; font-weight:bold;">' + escapeHTML(uName) + '</a>';
-            let isStagnant = false;
-            let isProcInit = false;
-            let isProcFinal = false;
+            let stagCount = 0;
+            let procInitCount = 0;
+            let procFinalCount = 0;
             let totalRuns = 0;
             let totalEvals = 0;
             let totalDebugs = 0;
@@ -647,27 +684,54 @@ document.addEventListener('DOMContentLoaded', function() {
             let procInitHours = confirmedSettings.procInitHours;
             let procFinalHours = confirmedSettings.procFinalHours;
             
-            if (st.vplMaxEffort) {
-                Object.keys(st.vplMaxEffort).forEach(vplId => {
-                    let v = st.vplMaxEffort[vplId];
+            currentFilteredVpls.forEach(vpl => {
+                let v = st.vplMaxEffort ? st.vplMaxEffort[vpl.id] : null;
+                if (v) {
                     totalRuns += v.runs || 0;
                     totalEvals += v.evals || 0;
                     totalDebugs += v.debugs || 0;
                     if (v.evals >= stagEvals && (v.finalGrade === null || v.finalGrade < stagGrade)) {
-                        isStagnant = true;
+                        stagCount++;
                     }
-                    let vDue = vplDict[vplId] ? vplDict[vplId].duedate : 0;
+                    let vDue = vpl.duedate || 0;
                     if (vDue > 0) {
-                        if (v.firstSub >= (vDue - (procInitHours * 3600))) isProcInit = true;
-                        if (v.lastSub >= (vDue - (procFinalHours * 3600))) isProcFinal = true;
+                        if (v.firstSub >= (vDue - (procInitHours * 3600))) procInitCount++;
+                        if (v.lastSub >= (vDue - (procFinalHours * 3600))) procFinalCount++;
                     }
-                });
+                }
+            });
+
+            let isStagnant = false;
+            if (totalFilteredCount > 0) {
+                let pctStag = (stagCount / totalFilteredCount) * 100;
+                if (pctStag >= confirmedSettings.stagActPct) isStagnant = true;
+            }
+
+            let isProcInit = false;
+            if (totalDueCount > 0) {
+                let pctProcInit = (procInitCount / totalDueCount) * 100;
+                if (pctProcInit >= confirmedSettings.procInitActPct) isProcInit = true;
+            }
+
+            let isProcFinal = false;
+            if (totalDueCount > 0) {
+                let pctProcFinal = (procFinalCount / totalDueCount) * 100;
+                if (pctProcFinal >= confirmedSettings.procFinalActPct) isProcFinal = true;
             }
             
             let badges = '';
-            if (isStagnant) badges += ' <span style="background:#dc3545; color:white; padding:2px 6px; border-radius:10px; font-size:0.75em;" title="' + lang.badge_risk_desc + '">' + lang.badge_risk + '</span>';
-            if (isProcInit) badges += ' <span style="background:#ffc107; color:black; padding:2px 6px; border-radius:10px; font-size:0.75em;" title="' + lang.badge_proc_init_desc + '">' + lang.badge_proc_init + '</span>';
-            if (isProcFinal) badges += ' <span style="background:#fd7e14; color:white; padding:2px 6px; border-radius:10px; font-size:0.75em;" title="' + lang.badge_proc_final_desc + '">' + lang.badge_proc_final + '</span>';
+            if (isStagnant) {
+                let titleRisk = lang.badge_risk_desc + ' (' + stagCount + '/' + totalFilteredCount + ', ' + Math.round((stagCount / totalFilteredCount) * 100) + '%)';
+                badges += ' <span style="background:#dc3545; color:white; padding:2px 6px; border-radius:10px; font-size:0.75em;" title="' + escapeHTML(titleRisk) + '">' + lang.badge_risk + '</span>';
+            }
+            if (isProcInit) {
+                let titleProcInit = lang.badge_proc_init_desc + ' (' + procInitCount + '/' + totalDueCount + ', ' + Math.round((procInitCount / totalDueCount) * 100) + '%)';
+                badges += ' <span style="background:#ffc107; color:black; padding:2px 6px; border-radius:10px; font-size:0.75em;" title="' + escapeHTML(titleProcInit) + '">' + lang.badge_proc_init + '</span>';
+            }
+            if (isProcFinal) {
+                let titleProcFinal = lang.badge_proc_final_desc + ' (' + procFinalCount + '/' + totalDueCount + ', ' + Math.round((procFinalCount / totalDueCount) * 100) + '%)';
+                badges += ' <span style="background:#fd7e14; color:white; padding:2px 6px; border-radius:10px; font-size:0.75em;" title="' + escapeHTML(titleProcFinal) + '">' + lang.badge_proc_final + '</span>';
+            }
             
             return { uLink, badges, totalRuns, totalEvals, totalDebugs };
         }
@@ -793,7 +857,7 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        document.querySelector('.vpl-table ' + 'thead').innerHTML = '<tr><th>' + lang.col_student + '</th><th>' + lang.col_group + '</th><th>' + lang.label_subs + '</th><th class=\'col-grade\'>' + lang.label_avg_grade + '</th><th>' + lang.col_first_sub + '</th><th>' + lang.col_last_sub + '</th><th>' + lang.col_runs + '</th><th>' + lang.col_debugs + '</th><th>' + lang.col_evals + '</th></tr>';
+        document.querySelector('.vpl-table ' + 'thead').innerHTML = '<tr><th>' + lang.col_student + '</th><th>' + lang.col_group + '</th><th>' + lang.label_subs + '</th><th class=\'col-grade\'>' + (lang.col_grade || 'Last Grade') + '</th><th>' + lang.col_first_sub + '</th><th>' + lang.col_last_sub + '</th><th>' + lang.col_runs + '</th><th>' + lang.col_debugs + '</th><th>' + lang.col_evals + '</th></tr>';
         
         let gradeHeaderNode = document.querySelector('.vpl-table thead th.col-grade');
         if (gradeHeaderNode) gradeHeaderNode.style.display = isSpecificVpl ? '' : 'none';
