@@ -258,6 +258,15 @@ defined('MOODLE_INTERNAL') || die(); ?>
                 <option value="letters"><?= get_string('scale_letters', 'report_vpl_analytics') ?></option>
             </select>
         </div>
+        <div id="numericBinsContainer" style="margin-bottom:20px;">
+            <label style="display:block; margin-bottom:5px; font-weight:bold;"><?= get_string('settings_grade_bins', 'report_vpl_analytics') ?></label>
+            <select id="settingGradeBins" style="width:100%; padding:6px; border:1px solid #ced4da; border-radius:4px;">
+                <option value="2"><?= get_string('bins_2', 'report_vpl_analytics') ?></option>
+                <option value="4"><?= get_string('bins_4', 'report_vpl_analytics') ?></option>
+                <option value="6" selected><?= get_string('bins_6', 'report_vpl_analytics') ?></option>
+                <option value="10"><?= get_string('bins_10', 'report_vpl_analytics') ?></option>
+            </select>
+        </div>
         <div id="letterRangesContainer" style="display:none; margin-bottom:20px; padding:10px; background:#f8f9fa; border:1px solid #dee2e6; border-radius:4px;">
             <label style="display:block; margin-bottom:10px; font-weight:bold; font-size:0.95em; color:#495057;"><?= get_string('settings_letter_ranges', 'report_vpl_analytics') ?></label>
             <div style="display:flex; gap:10px; text-align:center;">

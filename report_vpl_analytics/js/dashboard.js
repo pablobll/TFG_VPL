@@ -7,10 +7,13 @@ document.addEventListener('DOMContentLoaded', function() {
     const excThresh = (rawData.settings && rawData.settings.exc_threshold !== undefined) ? parseFloat(rawData.settings.exc_threshold) : 0.9;
     
     const gradeScaleEl = document.getElementById('settingGradeScale');
+    const gradeBinsEl = document.getElementById('settingGradeBins');
+    const numericBinsEl = document.getElementById('numericBinsContainer');
     const letterRangesEl = document.getElementById('letterRangesContainer');
 
     let confirmedSettings = {
         scale: gradeScaleEl ? gradeScaleEl.value : '10',
+        gradeBins: gradeBinsEl ? gradeBinsEl.value : '6',
         stagEvals: parseInt(document.getElementById('settingStagnantEvals').value, 10) || 15,
         stagGrade: parseFloat(document.getElementById('settingStagnantGrade').value) || 5.0,
         stagActPct: parseInt(document.getElementById('settingStagnantActPct').value, 10) || 50,
@@ -212,6 +215,8 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('settingLetterB').value = confirmedSettings.letterB;
         document.getElementById('settingLetterC').value = confirmedSettings.letterC;
         document.getElementById('settingLetterD').value = confirmedSettings.letterD;
+        if (gradeBinsEl) gradeBinsEl.value = confirmedSettings.gradeBins || '6';
+        if (numericBinsEl) numericBinsEl.style.display = confirmedSettings.scale === 'letters' ? 'none' : 'block';
         letterRangesEl.style.display = confirmedSettings.scale === 'letters' ? 'block' : 'none';
         modalPrevScale = confirmedSettings.scale;
     }
@@ -246,6 +251,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         confirmedSettings.scale = newScale;
+        if (gradeBinsEl) confirmedSettings.gradeBins = gradeBinsEl.value;
         confirmedSettings.stagEvals = parseInt(document.getElementById('settingStagnantEvals').value, 10) || 15;
         confirmedSettings.stagGrade = stagVal;
         confirmedSettings.stagActPct = clampPct(document.getElementById('settingStagnantActPct').value, 50);
@@ -264,6 +270,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     gradeScaleEl.addEventListener('change', () => {
         let newScale = gradeScaleEl.value;
+        if (numericBinsEl) numericBinsEl.style.display = newScale === 'letters' ? 'none' : 'block';
         letterRangesEl.style.display = newScale === 'letters' ? 'block' : 'none';
 
         let stagInput = document.getElementById('settingStagnantGrade');
@@ -279,6 +286,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         modalPrevScale = newScale;
     });
+    if (numericBinsEl) numericBinsEl.style.display = gradeScaleEl.value === 'letters' ? 'none' : 'block';
     letterRangesEl.style.display = gradeScaleEl.value === 'letters' ? 'block' : 'none';
 
     let groupMap = {};
@@ -987,12 +995,30 @@ document.addEventListener('DOMContentLoaded', function() {
             let tB = confirmedSettings.letterB / 10;
             let tC = confirmedSettings.letterC / 10;
             let tD = confirmedSettings.letterD / 10;
-            if (scale === '100') {
-                binKeys = ['0-20', '20-40', '40-50', '50-70', '70-90', '90-100'];
-            } else if (scale === 'letters') {
+            let numBins = confirmedSettings.gradeBins || '6';
+
+            if (scale === 'letters') {
                 binKeys = ['F', 'D', 'C', 'B', 'A'];
+            } else if (scale === '100') {
+                if (numBins === '2') {
+                    binKeys = ['0-50', '50-100'];
+                } else if (numBins === '4') {
+                    binKeys = ['0-50', '50-70', '70-90', '90-100'];
+                } else if (numBins === '10') {
+                    binKeys = ['0-10', '10-20', '20-30', '30-40', '40-50', '50-60', '60-70', '70-80', '80-90', '90-100'];
+                } else {
+                    binKeys = ['0-20', '20-40', '40-50', '50-70', '70-90', '90-100'];
+                }
             } else {
-                binKeys = ['0-2', '2-4', '4-5', '5-7', '7-9', '9-10'];
+                if (numBins === '2') {
+                    binKeys = ['0-5', '5-10'];
+                } else if (numBins === '4') {
+                    binKeys = ['0-5', '5-7', '7-9', '9-10'];
+                } else if (numBins === '10') {
+                    binKeys = ['0-1', '1-2', '2-3', '3-4', '4-5', '5-6', '6-7', '7-8', '8-9', '9-10'];
+                } else {
+                    binKeys = ['0-2', '2-4', '4-5', '5-7', '7-9', '9-10'];
+                }
             }
 
             let rangesList = datasetsInfo.map(ds => {
@@ -1010,26 +1036,68 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 Object.values(finalGrades).forEach(g => {
                     let grade = g.grade;
-                    if (scale === '100') {
-                        if (grade < 0.2) ranges['0-20']++;
-                        else if (grade < 0.4) ranges['20-40']++;
-                        else if (grade < 0.5) ranges['40-50']++;
-                        else if (grade < 0.7) ranges['50-70']++;
-                        else if (grade < 0.9) ranges['70-90']++;
-                        else ranges['90-100']++;
-                    } else if (scale === 'letters') {
+                    if (scale === 'letters') {
                         if (grade < tD) ranges['F']++;
                         else if (grade < tC) ranges['D']++;
                         else if (grade < tB) ranges['C']++;
                         else if (grade < tA) ranges['B']++;
                         else ranges['A']++;
+                    } else if (scale === '100') {
+                        if (numBins === '2') {
+                            if (grade < 0.5) ranges['0-50']++;
+                            else ranges['50-100']++;
+                        } else if (numBins === '4') {
+                            if (grade < 0.5) ranges['0-50']++;
+                            else if (grade < 0.7) ranges['50-70']++;
+                            else if (grade < 0.9) ranges['70-90']++;
+                            else ranges['90-100']++;
+                        } else if (numBins === '10') {
+                            if (grade < 0.1) ranges['0-10']++;
+                            else if (grade < 0.2) ranges['10-20']++;
+                            else if (grade < 0.3) ranges['20-30']++;
+                            else if (grade < 0.4) ranges['30-40']++;
+                            else if (grade < 0.5) ranges['40-50']++;
+                            else if (grade < 0.6) ranges['50-60']++;
+                            else if (grade < 0.7) ranges['60-70']++;
+                            else if (grade < 0.8) ranges['70-80']++;
+                            else if (grade < 0.9) ranges['80-90']++;
+                            else ranges['90-100']++;
+                        } else {
+                            if (grade < 0.2) ranges['0-20']++;
+                            else if (grade < 0.4) ranges['20-40']++;
+                            else if (grade < 0.5) ranges['40-50']++;
+                            else if (grade < 0.7) ranges['50-70']++;
+                            else if (grade < 0.9) ranges['70-90']++;
+                            else ranges['90-100']++;
+                        }
                     } else {
-                        if (grade < 0.2) ranges['0-2']++;
-                        else if (grade < 0.4) ranges['2-4']++;
-                        else if (grade < 0.5) ranges['4-5']++;
-                        else if (grade < 0.7) ranges['5-7']++;
-                        else if (grade < 0.9) ranges['7-9']++;
-                        else ranges['9-10']++;
+                        if (numBins === '2') {
+                            if (grade < 0.5) ranges['0-5']++;
+                            else ranges['5-10']++;
+                        } else if (numBins === '4') {
+                            if (grade < 0.5) ranges['0-5']++;
+                            else if (grade < 0.7) ranges['5-7']++;
+                            else if (grade < 0.9) ranges['7-9']++;
+                            else ranges['9-10']++;
+                        } else if (numBins === '10') {
+                            if (grade < 0.1) ranges['0-1']++;
+                            else if (grade < 0.2) ranges['1-2']++;
+                            else if (grade < 0.3) ranges['2-3']++;
+                            else if (grade < 0.4) ranges['3-4']++;
+                            else if (grade < 0.5) ranges['4-5']++;
+                            else if (grade < 0.6) ranges['5-6']++;
+                            else if (grade < 0.7) ranges['6-7']++;
+                            else if (grade < 0.8) ranges['7-8']++;
+                            else if (grade < 0.9) ranges['8-9']++;
+                            else ranges['9-10']++;
+                        } else {
+                            if (grade < 0.2) ranges['0-2']++;
+                            else if (grade < 0.4) ranges['2-4']++;
+                            else if (grade < 0.5) ranges['4-5']++;
+                            else if (grade < 0.7) ranges['5-7']++;
+                            else if (grade < 0.9) ranges['7-9']++;
+                            else ranges['9-10']++;
+                        }
                     }
                 });
                 return ranges;
