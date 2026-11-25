@@ -60,6 +60,7 @@ $lang_strings = [
     'col_student' => get_string('col_student', 'report_vpl_analytics'),
     'col_group' => get_string('col_group', 'report_vpl_analytics'),
     'col_grade' => get_string('col_grade', 'report_vpl_analytics'),
+    'course_average' => get_string('course_average', 'report_vpl_analytics'),
     'label_student' => get_string('label_student', 'report_vpl_analytics'),
     'label_group' => get_string('label_group', 'report_vpl_analytics'),
     'label_no_group' => get_string('label_no_group', 'report_vpl_analytics'),

@@ -148,6 +148,7 @@ defined('MOODLE_INTERNAL') || die(); ?>
                 <label><?= get_string('user_2', 'report_vpl_analytics') ?></label>
                 <select id="compareUser2">
                     <option value="none"><?= get_string('none_selected', 'report_vpl_analytics') ?></option>
+                    <option value="course_avg"><?= get_string('course_average', 'report_vpl_analytics') ?></option>
                 </select>
             </div>
             <div class="vpl-control-group">

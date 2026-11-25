@@ -538,6 +538,7 @@ document.addEventListener('DOMContentLoaded', function() {
             let cuFiltered = filterByVpl(baseFiltered, compareUsersFilterVplEl.value);
             let combined = [];
             let allowedUsersList = [];
+            let isCourseAvg = (uid2 === 'course_avg');
             
             if (uid1 !== 'none') {
                 let uName1 = rawData.user_names_map && rawData.user_names_map[uid1] ? rawData.user_names_map[uid1] : uid1;
@@ -547,11 +548,20 @@ document.addEventListener('DOMContentLoaded', function() {
                 allowedUsersList.push(uid1);
             }
             if (uid2 !== 'none') {
-                let uName2 = rawData.user_names_map && rawData.user_names_map[uid2] ? rawData.user_names_map[uid2] : uid2;
-                let d2 = cuFiltered.filter(s => s.userid == uid2);
-                datasetsInfo.push({ label: uName2, data: d2, color: secondaryColor });
-                combined.push(...d2);
-                allowedUsersList.push(uid2);
+                if (isCourseAvg) {
+                    datasetsInfo.push({
+                        label: (lang.course_average || 'Media del curso'),
+                        data: cuFiltered,
+                        color: secondaryColor,
+                        isCourseAvg: true
+                    });
+                } else {
+                    let uName2 = rawData.user_names_map && rawData.user_names_map[uid2] ? rawData.user_names_map[uid2] : uid2;
+                    let d2 = cuFiltered.filter(s => s.userid == uid2);
+                    datasetsInfo.push({ label: uName2, data: d2, color: secondaryColor });
+                    combined.push(...d2);
+                    allowedUsersList.push(uid2);
+                }
             }
             
             let combinedMap = new Map();
@@ -559,11 +569,15 @@ document.addEventListener('DOMContentLoaded', function() {
             combined = Array.from(combinedMap.values());
             
             let combinedTotal = allowedUsersList.length > 0 ? new Set(allowedUsersList).size : 0;
-            updateKPIs(combined, combinedTotal);
+            if (isCourseAvg) {
+                updateKPIs(cuFiltered, rawData.total_students);
+            } else {
+                updateKPIs(combined, combinedTotal);
+            }
             
             document.getElementById('mainTableContainer').style.display = 'block';
             document.getElementById('tableTopControls').style.display = 'flex';
-            updateTable(combined, null, allowedUsersList);
+            updateTable(combined, null, allowedUsersList, isCourseAvg ? cuFiltered : null);
         }
 
         renderChart(type, datasetsInfo);
@@ -661,7 +675,7 @@ document.addEventListener('DOMContentLoaded', function() {
      * @param {Set|null} allowedGroupIds - Filtro opcional de grupos
      * @param {Set|null} allowedUserIds - Filtro opcional de usuarios
      */
-    function updateTable(subs, allowedGroupIds = null, allowedUserIds = null) {
+    function updateTable(subs, allowedGroupIds = null, allowedUserIds = null, courseAvgSubs = null) {
         const tbody = document.getElementById('dataTableBody');
         tbody.innerHTML = '';
         
@@ -821,7 +835,7 @@ document.addEventListener('DOMContentLoaded', function() {
             let nameB = rawData.user_names_map && rawData.user_names_map[b] ? rawData.user_names_map[b].toLowerCase() : b.toString();
             return nameA.localeCompare(nameB);
         });
-        if (sortedUsers.length === 0) {
+        if (sortedUsers.length === 0 && (!courseAvgSubs || courseAvgSubs.length === 0)) {
             let colCount = isSpecificVpl ? 9 : 8;
             tbody.innerHTML = '<tr><td colspan=\'' + colCount + '\' style=\'text-align:center\'>' + lang.label_no_students + '</td></tr>';
             return;
@@ -893,6 +907,59 @@ document.addEventListener('DOMContentLoaded', function() {
             `;
             tbody.appendChild(tr);
         });
+
+        if (courseAvgSubs && courseAvgSubs.length > 0) {
+            let totalStudents = Math.max(1, rawData.total_students || 1);
+            let avgSubs = (courseAvgSubs.length / totalStudents).toFixed(1);
+            let courseGrades = {};
+            let userEffort = {};
+            courseAvgSubs.forEach(s => {
+                if (s.grade !== null) {
+                    let k = s.userid + '_' + s.vpl;
+                    if (courseGrades[k] === undefined || s.datesubmitted > courseGrades[k].date) {
+                        courseGrades[k] = { grade: s.grade, date: s.datesubmitted };
+                    }
+                }
+                if (!userEffort[s.userid]) userEffort[s.userid] = { vplEffort: {} };
+                if (!userEffort[s.userid].vplEffort[s.vpl]) userEffort[s.userid].vplEffort[s.vpl] = { runs: 0, evals: 0, debugs: 0 };
+                if (s.run_count > userEffort[s.userid].vplEffort[s.vpl].runs) userEffort[s.userid].vplEffort[s.vpl].runs = s.run_count;
+                if (s.nevaluations > userEffort[s.userid].vplEffort[s.vpl].evals) userEffort[s.userid].vplEffort[s.vpl].evals = s.nevaluations;
+                if (s.debug_count && s.debug_count > userEffort[s.userid].vplEffort[s.vpl].debugs) userEffort[s.userid].vplEffort[s.vpl].debugs = s.debug_count;
+            });
+            let gradeVals = Object.values(courseGrades).map(g => g.grade);
+            let avgGrade = gradeVals.length > 0 ? (gradeVals.reduce((a, b) => a + b, 0) / gradeVals.length) : null;
+            let avgGradeStr = avgGrade !== null ? formatGradeStr(avgGrade) : '--';
+            let gradeTd = isSpecificVpl ? `<td>${avgGradeStr}</td>` : '';
+
+            let sumRuns = 0, sumDebugs = 0, sumEvals = 0;
+            Object.values(userEffort).forEach(u => {
+                Object.values(u.vplEffort).forEach(v => {
+                    sumRuns += v.runs;
+                    sumDebugs += v.debugs;
+                    sumEvals += v.evals;
+                });
+            });
+            let avgRuns = (sumRuns / totalStudents).toFixed(1);
+            let avgDebugs = (sumDebugs / totalStudents).toFixed(1);
+            let avgEvals = (sumEvals / totalStudents).toFixed(1);
+
+            let trAvg = document.createElement('tr');
+            trAvg.style.background = '#f8f9fa';
+            trAvg.style.fontWeight = 'bold';
+            trAvg.style.borderTop = '2px solid #adb5bd';
+            trAvg.innerHTML = `
+                <td>${escapeHTML(lang.course_average || 'Media del curso')}</td>
+                <td>--</td>
+                <td>${avgSubs}</td>
+                ${gradeTd}
+                <td>--</td>
+                <td>--</td>
+                <td>${avgRuns}</td>
+                <td>${avgDebugs}</td>
+                <td>${avgEvals}</td>
+            `;
+            tbody.appendChild(trAvg);
+        }
     }
 
     /**
@@ -936,8 +1003,8 @@ document.addEventListener('DOMContentLoaded', function() {
             
             let matrix = Array(7).fill(0).map(() => Array(24).fill(0));
             let maxVal = 0;
+            let processedRealIds = new Set();
             datasetsInfo.forEach(ds => {
-                let processedRealIds = new Set();
                 ds.data.forEach(s => {
                     if (processedRealIds.has(s.real_id)) return;
                     processedRealIds.add(s.real_id);
@@ -987,6 +1054,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         let chartDatasets = [];
         let commonLabels = [];
+        let showLegend = datasetsInfo.length > 1;
 
         if (type === 'rendimiento') {
             let scale = getSelectedScale();
@@ -1021,6 +1089,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
 
+            let rawCountsList = [];
             let rangesList = datasetsInfo.map(ds => {
                 let ranges = {};
                 binKeys.forEach(k => ranges[k] = 0);
@@ -1100,12 +1169,20 @@ document.addEventListener('DOMContentLoaded', function() {
                         }
                     }
                 });
-                return ranges;
+
+                let totalGrades = Object.values(finalGrades).length;
+                let pctRanges = {};
+                binKeys.forEach(k => {
+                    pctRanges[k] = totalGrades > 0 ? parseFloat(((ranges[k] / totalGrades) * 100).toFixed(1)) : 0;
+                });
+                rawCountsList.push(ranges);
+                return pctRanges;
             });
             commonLabels = Object.keys(rangesList[0]);
             chartDatasets = datasetsInfo.map((ds, i) => ({
-                label: lang.label_num_subs + ' (' + ds.label + ')',
+                label: ds.label,
                 data: Object.values(rangesList[i]),
+                rawCounts: Object.values(rawCountsList[i]),
                 backgroundColor: ds.color
             }));
 
@@ -1114,13 +1191,74 @@ document.addEventListener('DOMContentLoaded', function() {
                 data: { labels: commonLabels, datasets: chartDatasets },
                 options: {
                     responsive: true,
-                    plugins: { legend: { display: false }, zoom: zoomOptions },
-                    scales: { y: { beginAtZero: true, title: {display:true, text:lang.label_qty} }, x: {title: {display:true, text:lang.label_grade_range}} }
+                    plugins: {
+                        legend: { display: showLegend },
+                        zoom: zoomOptions,
+                        tooltip: {
+                            callbacks: {
+                                label: function(ctx) {
+                                    let rawVal = ctx.dataset.rawCounts ? ctx.dataset.rawCounts[ctx.dataIndex] : '';
+                                    let label = ctx.dataset.label || '';
+                                    let countLabel = (rawVal === 1) ? (lang.label_student || 'alumno') : (lang.label_students || 'alumnos');
+                                    return `${label}: ${ctx.raw}% (${rawVal} ${countLabel})`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            title: { display: true, text: '%' },
+                            ticks: {
+                                callback: function(val) { return val + '%'; }
+                            }
+                        },
+                        x: {
+                            title: { display: true, text: lang.label_grade_range }
+                        }
+                    }
                 }
             });
 
         } else if (type === 'esfuerzo') {
             chartDatasets = datasetsInfo.map(ds => {
+                if (ds.isCourseAvg) {
+                    let userEffort = {};
+                    ds.data.forEach(s => {
+                        if (!userEffort[s.userid]) {
+                            userEffort[s.userid] = { vplMaxEffort: {} };
+                        }
+                        if (!userEffort[s.userid].vplMaxEffort[s.vpl]) {
+                            userEffort[s.userid].vplMaxEffort[s.vpl] = { runs: 0, evals: 0 };
+                        }
+                        if (s.run_count > userEffort[s.userid].vplMaxEffort[s.vpl].runs) {
+                            userEffort[s.userid].vplMaxEffort[s.vpl].runs = s.run_count;
+                        }
+                        if (s.nevaluations > userEffort[s.userid].vplMaxEffort[s.vpl].evals) {
+                            userEffort[s.userid].vplMaxEffort[s.vpl].evals = s.nevaluations;
+                        }
+                    });
+                    let totalR = 0, totalE = 0;
+                    Object.values(userEffort).forEach(u => {
+                        Object.values(u.vplMaxEffort).forEach(v => {
+                            totalR += v.runs;
+                            totalE += v.evals;
+                        });
+                    });
+                    let denom = Math.max(1, rawData.total_students || Object.keys(userEffort).length || 1);
+                    let avgR = parseFloat((totalR / denom).toFixed(1));
+                    let avgE = parseFloat((totalE / denom).toFixed(1));
+                    return {
+                        label: ds.label,
+                        data: [{ x: avgR, y: avgE, isAvg: true, label: ds.label }],
+                        backgroundColor: ds.color,
+                        pointRadius: 9,
+                        pointHoverRadius: 11,
+                        pointStyle: 'triangle'
+                    };
+                }
+
                 let userEffort = {};
                 ds.data.forEach(s => {
                     if (!userEffort[s.userid]) {
@@ -1160,9 +1298,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 options: {
                     responsive: true,
                     plugins: { 
-                        legend: { display: false },
+                        legend: { display: showLegend },
                         zoom: zoomOptions,
                         tooltip: { callbacks: { label: function(ctx) { 
+                            if (ctx.raw.isAvg) {
+                                return `${ctx.raw.label}: ${ctx.raw.x} ${lang.label_execs.toLowerCase()}, ${ctx.raw.y} ${lang.label_evals.toLowerCase()}`;
+                            }
                             let uid = ctx.raw.userid;
                             let uName = rawData.user_names_map && rawData.user_names_map[uid] ? rawData.user_names_map[uid] : uid;
                             return `${uName}: ${ctx.raw.x} ${lang.label_execs.toLowerCase()}, ${ctx.raw.y} ${lang.label_evals.toLowerCase()}`; 
@@ -1198,6 +1339,12 @@ document.addEventListener('DOMContentLoaded', function() {
                             String(jsDate.getDate()).padStart(2, '0');
                     dateCounts[d] = (dateCounts[d] || 0) + valGetter(s);
                 });
+                if (ds.isCourseAvg) {
+                    let totalStudentsCount = Math.max(1, rawData.total_students || 1);
+                    Object.keys(dateCounts).forEach(d => {
+                        dateCounts[d] = parseFloat((dateCounts[d] / totalStudentsCount).toFixed(2));
+                    });
+                }
                 return dateCounts;
             });
             
@@ -1242,7 +1389,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 data: { labels: commonLabels, datasets: chartDatasets },
                 options: {
                     responsive: true,
-                    plugins: { legend: { display: false }, zoom: zoomOptions },
+                    plugins: { legend: { display: showLegend }, zoom: zoomOptions },
                     scales: { x: { title: {display:false} }, y: { beginAtZero: true, title: {display:true, text:yAxisTitle} } }
                 }
             });
