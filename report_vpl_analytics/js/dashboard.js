@@ -34,20 +34,39 @@ document.addEventListener('DOMContentLoaded', function() {
         return n;
     }
 
+    function vplMatchesCategories(v) {
+        if (!v) return false;
+        let cGraded = document.getElementById('chkCatGraded') && document.getElementById('chkCatGraded').checked;
+        let cUngraded = document.getElementById('chkCatUngraded') && document.getElementById('chkCatUngraded').checked;
+        let cOpen = document.getElementById('chkCatOpen') && document.getElementById('chkCatOpen').checked;
+        let cClosed = document.getElementById('chkCatClosed') && document.getElementById('chkCatClosed').checked;
+        let cGroup = document.getElementById('chkCatGroup') && document.getElementById('chkCatGroup').checked;
+        let cIndiv = document.getElementById('chkCatIndividual') && document.getElementById('chkCatIndividual').checked;
+
+        if (cGraded && !cUngraded && !v.graded) return false;
+        if (cUngraded && !cGraded && v.graded) return false;
+
+        if (cOpen && !cClosed && v.closed) return false;
+        if (cClosed && !cOpen && !v.closed) return false;
+
+        if (cGroup && !cIndiv && !v.is_group) return false;
+        if (cIndiv && !cGroup && v.is_group) return false;
+
+        return true;
+    }
+
     function getFilteredVplsList(vplFilterVal) {
         if (!rawData.vpls || rawData.vpls.length === 0) return [];
-        if (!vplFilterVal || vplFilterVal === 'all') return rawData.vpls;
-        if (vplFilterVal === 'cat_graded') return rawData.vpls.filter(v => v.graded);
-        if (vplFilterVal === 'cat_ungraded') return rawData.vpls.filter(v => !v.graded);
-        if (vplFilterVal === 'cat_open') return rawData.vpls.filter(v => !v.closed);
-        if (vplFilterVal === 'cat_closed') return rawData.vpls.filter(v => v.closed);
-        if (vplFilterVal === 'cat_group') return rawData.vpls.filter(v => v.is_group);
-        if (vplFilterVal === 'cat_individual') return rawData.vpls.filter(v => !v.is_group);
-        if (vplFilterVal.startsWith('sec_')) {
-            const targetSec = vplFilterVal.substring(4);
-            return rawData.vpls.filter(v => v.section === targetSec);
+        let list = rawData.vpls;
+        if (vplFilterVal && vplFilterVal !== 'all') {
+            if (vplFilterVal.startsWith('sec_')) {
+                const targetSec = vplFilterVal.substring(4);
+                list = list.filter(v => v.section === targetSec);
+            } else if (!vplFilterVal.startsWith('cat_')) {
+                list = list.filter(v => v.id == vplFilterVal);
+            }
         }
-        return rawData.vpls.filter(v => v.id == vplFilterVal);
+        return list.filter(v => vplMatchesCategories(v));
     }
 
     function generateContinuousDays(startStr, endStr) {
@@ -320,22 +339,6 @@ document.addEventListener('DOMContentLoaded', function() {
         while (selectEl.options.length > 1) selectEl.remove(1);
 
         if (rawData.vpls) {
-            const categories = [
-                { id: 'cat_graded', text: lang.cat_graded },
-                { id: 'cat_ungraded', text: lang.cat_ungraded },
-                { id: 'cat_open', text: lang.cat_open },
-                { id: 'cat_closed', text: lang.cat_closed },
-                { id: 'cat_group', text: lang.cat_group },
-                { id: 'cat_individual', text: lang.cat_individual }
-            ];
-            categories.forEach(c =>
-                selectEl.appendChild(Object.assign(document.createElement('option'), { value: c.id, innerText: c.text }))
-            );
-
-            let sep = document.createElement('option');
-            sep.disabled = true; sep.innerText = '──────────';
-            selectEl.appendChild(sep);
-
             let sections = {};
             rawData.vpls.forEach(v => { if (!sections[v.section]) sections[v.section] = []; sections[v.section].push(v); });
             Object.keys(sections).forEach(secName => {
@@ -357,18 +360,17 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     function filterByVpl(subs, vplId) {
-        if (!vplId || vplId === 'all') return subs;
-        if (vplId === 'cat_graded') return subs.filter(s => vplDict[s.vpl] && vplDict[s.vpl].graded);
-        if (vplId === 'cat_ungraded') return subs.filter(s => vplDict[s.vpl] && !vplDict[s.vpl].graded);
-        if (vplId === 'cat_open') return subs.filter(s => vplDict[s.vpl] && !vplDict[s.vpl].closed);
-        if (vplId === 'cat_closed') return subs.filter(s => vplDict[s.vpl] && vplDict[s.vpl].closed);
-        if (vplId === 'cat_group') return subs.filter(s => vplDict[s.vpl] && vplDict[s.vpl].is_group);
-        if (vplId === 'cat_individual') return subs.filter(s => vplDict[s.vpl] && !vplDict[s.vpl].is_group);
-        if (vplId.startsWith('sec_')) {
-            const targetSec = vplId.substring(4);
-            return subs.filter(s => vplDict[s.vpl] && vplDict[s.vpl].section === targetSec);
+        if (!subs || subs.length === 0) return [];
+        let filtered = subs;
+        if (vplId && vplId !== 'all') {
+            if (vplId.startsWith('sec_')) {
+                const targetSec = vplId.substring(4);
+                filtered = filtered.filter(s => vplDict[s.vpl] && vplDict[s.vpl].section === targetSec);
+            } else if (!vplId.startsWith('cat_')) {
+                filtered = filtered.filter(s => s.vpl == vplId);
+            }
         }
-        return subs.filter(s => s.vpl == vplId);
+        return filtered.filter(s => vplMatchesCategories(vplDict[s.vpl]));
     }
 
     populateVplSelect(filterVplEl);
@@ -396,6 +398,10 @@ document.addEventListener('DOMContentLoaded', function() {
     const filterDateToEl = document.getElementById('filterDateTo');
     
     [chartTypeEl, filterGroupEl, filterVplEl, compareGroup1El, compareGroup2El, compareUser1El, compareUser2El, filterDateFromEl, filterDateToEl, compareGroupsFilterVplEl, compareUsersFilterVplEl].forEach(el => el.addEventListener('change', updateDashboard));
+    ['chkCatGraded', 'chkCatUngraded', 'chkCatOpen', 'chkCatClosed', 'chkCatGroup', 'chkCatIndividual'].forEach(id => {
+        let el = document.getElementById(id);
+        if (el) el.addEventListener('change', updateDashboard);
+    });
 
     function updateDashboard() {
         const heatOption = Array.from(chartTypeEl.options).find(opt => opt.value === 'heatmap_tiempo');

@@ -158,6 +158,27 @@ defined('MOODLE_INTERNAL') || die(); ?>
                 </select>
             </div>
         </div>
+        <div id="vplCategoryFilters" style="display:flex; flex-wrap:wrap; align-items:center; gap:15px; width:100%; padding-top:10px; border-top:1px dashed #dee2e6; font-size:0.9em; color:#495057;">
+            <span style="font-weight:bold; color:#212529;"><?= get_string('filter_vpl', 'report_vpl_analytics') ?>:</span>
+            <label style="display:flex; align-items:center; gap:4px; margin:0; cursor:pointer;">
+                <input type="checkbox" id="chkCatGraded" value="cat_graded"> <?= get_string('cat_graded', 'report_vpl_analytics') ?>
+            </label>
+            <label style="display:flex; align-items:center; gap:4px; margin:0; cursor:pointer;">
+                <input type="checkbox" id="chkCatUngraded" value="cat_ungraded"> <?= get_string('cat_ungraded', 'report_vpl_analytics') ?>
+            </label>
+            <label style="display:flex; align-items:center; gap:4px; margin:0; cursor:pointer;">
+                <input type="checkbox" id="chkCatOpen" value="cat_open"> <?= get_string('cat_open', 'report_vpl_analytics') ?>
+            </label>
+            <label style="display:flex; align-items:center; gap:4px; margin:0; cursor:pointer;">
+                <input type="checkbox" id="chkCatClosed" value="cat_closed"> <?= get_string('cat_closed', 'report_vpl_analytics') ?>
+            </label>
+            <label style="display:flex; align-items:center; gap:4px; margin:0; cursor:pointer;">
+                <input type="checkbox" id="chkCatGroup" value="cat_group"> <?= get_string('cat_group', 'report_vpl_analytics') ?>
+            </label>
+            <label style="display:flex; align-items:center; gap:4px; margin:0; cursor:pointer;">
+                <input type="checkbox" id="chkCatIndividual" value="cat_individual"> <?= get_string('cat_individual', 'report_vpl_analytics') ?>
+            </label>
+        </div>
     </div>
 
     <div class="vpl-canvas-container" style="position:relative;">
