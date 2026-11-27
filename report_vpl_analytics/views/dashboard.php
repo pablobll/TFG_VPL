@@ -195,9 +195,21 @@ defined('MOODLE_INTERNAL') || die(); ?>
         </div>
     </div>
 
-    <div id="tableTopControls" style="display: none; justify-content: space-between; align-items: flex-end; margin-top: 20px; margin-bottom: 10px;">
-        <div style="flex:1; display:flex; gap:10px;">
-            <input type="text" id="tableSearch" placeholder="<?= get_string('search_student', 'report_vpl_analytics') ?>" style="width:100%; max-width:300px; padding:6px 10px; border:1px solid #ced4da; border-radius:4px; font-size:14px;" autocomplete="off">
+    <div id="tableTopControls" style="display: none; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; margin-top: 20px; margin-bottom: 10px;">
+        <div style="flex:1; display:flex; flex-wrap:wrap; align-items:center; gap:12px;">
+            <input type="text" id="tableSearch" placeholder="<?= get_string('search_student', 'report_vpl_analytics') ?>" style="width:100%; max-width:260px; padding:6px 10px; border:1px solid #ced4da; border-radius:4px; font-size:14px;" autocomplete="off">
+            <div id="tableBadgeFilters" style="display:flex; align-items:center; gap:10px; font-size:0.9em;">
+                <span style="font-weight:bold; color:#495057;"><?= get_string('filter_badges', 'report_vpl_analytics') ?>:</span>
+                <label style="display:flex; align-items:center; gap:4px; margin:0; cursor:pointer;">
+                    <input type="checkbox" id="chkBadgeRisk"> <span style="background:#dc3545; color:white; padding:1px 6px; border-radius:8px; font-size:0.85em;"><?= get_string('badge_risk', 'report_vpl_analytics') ?></span>
+                </label>
+                <label style="display:flex; align-items:center; gap:4px; margin:0; cursor:pointer;">
+                    <input type="checkbox" id="chkBadgeProcInit"> <span style="background:#ffc107; color:black; padding:1px 6px; border-radius:8px; font-size:0.85em;"><?= get_string('badge_proc_init', 'report_vpl_analytics') ?></span>
+                </label>
+                <label style="display:flex; align-items:center; gap:4px; margin:0; cursor:pointer;">
+                    <input type="checkbox" id="chkBadgeProcFinal"> <span style="background:#fd7e14; color:white; padding:1px 6px; border-radius:8px; font-size:0.85em;"><?= get_string('badge_proc_final', 'report_vpl_analytics') ?></span>
+                </label>
+            </div>
             <button id="btnExportCSV" class="btn btn-outline-secondary btn-sm"><?= get_string('btn_export_csv', 'report_vpl_analytics') ?></button>
         </div>
         <div style="text-align: right; font-size: 0.85em; color: #6c757d;">

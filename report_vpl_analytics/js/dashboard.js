@@ -761,7 +761,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 badges += ' <span style="background:#fd7e14; color:white; padding:2px 6px; border-radius:10px; font-size:0.75em;" title="' + escapeHTML(titleProcFinal) + '">' + lang.badge_proc_final + '</span>';
             }
             
-            return { uLink, badges, totalRuns, totalEvals, totalDebugs };
+            return { uLink, badges, totalRuns, totalEvals, totalDebugs, isStagnant, isProcInit, isProcFinal };
         }
 
         let studentStats = {};
@@ -866,6 +866,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 let meta = getStudentRowMeta(uid, st);
                 
                 let tr = document.createElement('tr');
+                tr.dataset.badgeRisk = meta.isStagnant ? '1' : '0';
+                tr.dataset.badgeProcInit = meta.isProcInit ? '1' : '0';
+                tr.dataset.badgeProcFinal = meta.isProcFinal ? '1' : '0';
                 let rowHtml = '<td>' + meta.uLink + meta.badges + '</td><td>' + escapeHTML(st.group) + '</td>';
                 
                 vplList.forEach(v => {
@@ -882,6 +885,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 tr.innerHTML = rowHtml;
                 tbody.appendChild(tr);
             });
+            filterTableRows();
             return;
         }
 
@@ -899,6 +903,9 @@ document.addEventListener('DOMContentLoaded', function() {
             let meta = getStudentRowMeta(uid, st);
             
             let tr = document.createElement('tr');
+            tr.dataset.badgeRisk = meta.isStagnant ? '1' : '0';
+            tr.dataset.badgeProcInit = meta.isProcInit ? '1' : '0';
+            tr.dataset.badgeProcFinal = meta.isProcFinal ? '1' : '0';
             let gradeTd = isSpecificVpl ? `<td>${gradeStr}</td>` : '';
             tr.innerHTML = `
                 <td>${meta.uLink} ${meta.badges}</td>
@@ -950,6 +957,7 @@ document.addEventListener('DOMContentLoaded', function() {
             let avgEvals = (sumEvals / totalStudents).toFixed(1);
 
             let trAvg = document.createElement('tr');
+            trAvg.dataset.isCourseAvg = '1';
             trAvg.style.background = '#f8f9fa';
             trAvg.style.fontWeight = 'bold';
             trAvg.style.borderTop = '2px solid #adb5bd';
@@ -966,6 +974,7 @@ document.addEventListener('DOMContentLoaded', function() {
             `;
             tbody.appendChild(trAvg);
         }
+        filterTableRows();
     }
 
     /**
@@ -1403,15 +1412,37 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    document.getElementById('tableSearch').addEventListener('input', function(e) {
-        let term = e.target.value.toLowerCase();
+    function filterTableRows() {
+        let term = (document.getElementById('tableSearch').value || '').toLowerCase();
+        let chkRisk = document.getElementById('chkBadgeRisk') && document.getElementById('chkBadgeRisk').checked;
+        let chkProcInit = document.getElementById('chkBadgeProcInit') && document.getElementById('chkBadgeProcInit').checked;
+        let chkProcFinal = document.getElementById('chkBadgeProcFinal') && document.getElementById('chkBadgeProcFinal').checked;
+        let anyBadgeActive = chkRisk || chkProcInit || chkProcFinal;
+
         let rows = document.querySelectorAll('#dataTableBody tr');
         rows.forEach(row => {
             if (row.cells.length > 0) {
+                if (row.dataset.isCourseAvg === '1') {
+                    row.style.display = (!anyBadgeActive && !term) ? '' : 'none';
+                    return;
+                }
                 let text = row.cells[0].textContent.toLowerCase();
-                row.style.display = text.includes(term) ? '' : 'none';
+                let matchesSearch = text.includes(term);
+                let matchesBadge = true;
+                if (anyBadgeActive) {
+                    matchesBadge = (chkRisk && row.dataset.badgeRisk === '1') ||
+                                   (chkProcInit && row.dataset.badgeProcInit === '1') ||
+                                   (chkProcFinal && row.dataset.badgeProcFinal === '1');
+                }
+                row.style.display = (matchesSearch && matchesBadge) ? '' : 'none';
             }
         });
+    }
+
+    document.getElementById('tableSearch').addEventListener('input', filterTableRows);
+    ['chkBadgeRisk', 'chkBadgeProcInit', 'chkBadgeProcFinal'].forEach(id => {
+        let el = document.getElementById(id);
+        if (el) el.addEventListener('change', filterTableRows);
     });
     document.getElementById('btnExportCSV').addEventListener('click', function() {
         let csv = [];

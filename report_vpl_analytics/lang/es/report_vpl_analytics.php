@@ -98,6 +98,7 @@ $string['tooltip_total_subs'] = 'Número total de entregas procesadas en este fi
 $string['tooltip_active_users'] = 'Alumnos filtrados que han realizado al menos una entrega';
 $string['tooltip_inactive_users'] = 'Alumnos filtrados que no tienen ninguna entrega registrada';
 $string['badge_risk'] = '[Riesgo]';
+$string['filter_badges'] = 'Insignias';
 $string['badge_risk_desc'] = 'Demasiadas evaluaciones con nota baja';
 $string['badge_proc_init'] = '[Proc. Inicial]';
 $string['badge_proc_init_desc'] = 'Primera entrega muy cerca del cierre';

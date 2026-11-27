@@ -98,6 +98,7 @@ $string['tooltip_total_subs'] = 'Total submissions processed in this filter';
 $string['tooltip_active_users'] = 'Filtered students with at least one submission';
 $string['tooltip_inactive_users'] = 'Filtered students with no submissions';
 $string['badge_risk'] = '[Risk]';
+$string['filter_badges'] = 'Badges';
 $string['badge_risk_desc'] = 'Too many evaluations with low grade';
 $string['badge_proc_init'] = '[Proc. Init]';
 $string['badge_proc_init_desc'] = 'First submission very close to deadline';
